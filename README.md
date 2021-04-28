@@ -22,7 +22,7 @@ URI="<Your MongoDB URI>"
 PORT=4000
 ```
 
-You can find on how to use my API [here](api.md)
+You can find the list of API [here](api.md)
 
 ## npm packages used so far
 - [express](https://www.npmjs.com/package/express)
