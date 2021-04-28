@@ -3,11 +3,24 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const app = express();
-app.use(cors());
 const port = process.env.PORT || 4000;
 
+app.use(cors());
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
+
 // Import Controllers
-const { streamAudio, getSongData } = require("./controller");
+const {
+    streamAudio,
+
+    addAlbum,
+    getAlbum,
+    getAlbumList,
+    getAlbumIcon,
+
+    addSong,
+    getSongData,
+} = require("./controller");
 
 // Database
 const mongoose = require("mongoose");
@@ -23,34 +36,34 @@ mongoose
     })
     .catch((err) => console.log(err));
 
-// Routes implementation
-app.get("/song/:songid", (req, res) => {
-    getSongData(req, res);
-});
+// =============== Routes ===============
 
 app.get("/song/play/:songid", (req, res) => {
     streamAudio(req, res);
 });
 
-// // Insert Songs
-// const songDocument = new Song({
-//     songid: "abs91n",
-//     title: "Some Song",
-// });
+// ---------- Albums ----------
+app.post("/album", (req, res) => {
+    addAlbum(req, res);
+});
 
-// const albumDocument = new Album({
-//     albumid: "abid0165",
-//     artist: "MarshmelloChoco",
-//     releaseDate: "2020-10-21",
-//     songs: songDocument,
-// });
+app.get("/album/:albumid", (req, res) => {
+    getAlbum(req, res);
+});
 
-// albumDocument.save().then((result) => console.log(result));
+app.get("/album", (req, res) => {
+    getAlbumList(req, res);
+});
 
-// Song.find().then((result) => {
-//     console.log(result);
-//     res.send(result);
-// });
+app.get("/album/:albumid/ico", (req, res) => {
+    getAlbumIcon(req, res);
+});
 
-//TODO: Add data into server, use UUID as the album and song id
-//TODO: Let client application adapt this data scheme 
+// ---------- Songs ----------
+app.post("/song", (req, res) => {
+    addSong(req, res);
+});
+
+app.get("/song/:songid", (req, res) => {
+    getSongData(req, res);
+});
