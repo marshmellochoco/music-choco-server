@@ -4,7 +4,7 @@ Aim of this project is to create a audio streaming application that is similar t
 
 ## Getting Started
 ### Pre-requisite
-- NodeJS (or npm)
+- [NodeJS](https://nodejs.org/en/) (or npm)
 - MongoDB (I'm using [MongoDB Atlas](https://www.mongodb.com/cloud/atlas))
 - My [react-music-player](https://github.com/marshmellochoco/react-music-player) or your own developed music player!
 
