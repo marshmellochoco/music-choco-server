@@ -12,14 +12,7 @@ Aim of this project is to create a audio streaming application that is similar t
 ```
 git clone https://github.com/marshmellochoco/react-music-player-server.git
 cd react-music-player && npm i
-node index.js
-```
-
-### Note
-I havent included the .env-example in this project but these are the items that you need to include in your .env file: 
-```
-URI="<Your MongoDB URI>"
-PORT=4000
+npm run start
 ```
 
 You can find the list of API [here](api.md)
@@ -31,3 +24,5 @@ You can find the list of API [here](api.md)
 - [mongoose](https://www.npmjs.com/package/mongoose)
 - [fluent-ffmpeg](https://www.npmjs.com/package/fluent-ffmpeg)
 - [get-mp3-duration](https://www.npmjs.com/package/get-mp3-duration)
+- [sharp](https://www.npmjs.com/package/sharp)
+- [dotenv](https://www.npmjs.com/package/dotenv)

@@ -1,5 +1,9 @@
 const { Song, Album } = require("./models/albums");
 
+const path = require("path");
+const sharp = require("sharp");
+const fs = require("fs");
+const getMP3Duration = require("get-mp3-duration");
 const ffmpegPath = require("@ffmpeg-installer/ffmpeg").path;
 const ffmpeg = require("fluent-ffmpeg");
 ffmpeg.setFfmpegPath(ffmpegPath);
@@ -21,6 +25,8 @@ async function streamAudio(req, res) {
             .on("error", function (err) {})
             // save to stream
             .pipe(res, { end: true });
+    } else {
+        res.status(404).send("Not found");
     }
 }
 
@@ -46,7 +52,7 @@ function addAlbum(req, res) {
                     console.log(err);
                 });
         } else {
-            res.send("Album already exist");
+            res.status(409).send("The album is already exist in the system.");
         }
     });
 }
@@ -56,6 +62,8 @@ function getAlbum(req, res) {
         Album.findOne({ _id: req.params.albumid }).then((response) => {
             res.send(response);
         });
+    } else {
+        res.status(404).send("Not found");
     }
 }
 
@@ -75,10 +83,28 @@ function getAlbumList(req, res) {
 }
 
 function getAlbumIcon(req, res) {
-    const path = require("path");
-    res.sendFile(
-        path.resolve(__dirname, "Song/" + req.params.albumid + "/ico.png")
+    let pathToImg = path.resolve(
+        __dirname,
+        "Song/" + req.params.albumid + "/ico.jpg"
     );
+    if (fs.existsSync(pathToImg)) {
+        sharp(pathToImg)
+            .resize(200, 200)
+            .toFile(
+                path.resolve(
+                    __dirname,
+                    "Song/" + req.params.albumid + "/ico200.jpg"
+                )
+            );
+        res.sendFile(
+            path.resolve(
+                __dirname,
+                "Song/" + req.params.albumid + "/ico200.jpg"
+            )
+        );
+    } else {
+        res.status(404).send("Not found");
+    }
 }
 
 // ---------- Songs ----------
@@ -121,12 +147,12 @@ async function getSongData(req, res) {
             );
             res.end();
         });
+    } else {
+        res.status(404).send("Not found");
     }
 }
 
 function getSongDuration(album, song) {
-    const getMP3Duration = require("get-mp3-duration");
-    const fs = require("fs");
     const buffer = fs.readFileSync("./Song/" + album + "/" + song + ".mp3");
     const duration = getMP3Duration(buffer) / 1000;
     return duration;
