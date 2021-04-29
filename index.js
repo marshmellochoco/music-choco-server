@@ -37,7 +37,6 @@ mongoose
     .catch((err) => console.log(err));
 
 // =============== Routes ===============
-
 app.get("/song/play/:songid", (req, res) => {
     streamAudio(req, res);
 });
