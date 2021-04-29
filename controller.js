@@ -1,7 +1,6 @@
 const { Song, Album } = require("./models/albums");
 
 const path = require("path");
-const sharp = require("sharp");
 const fs = require("fs");
 const getMP3Duration = require("get-mp3-duration");
 const ffmpegPath = require("@ffmpeg-installer/ffmpeg").path;
@@ -9,10 +8,9 @@ const ffmpeg = require("fluent-ffmpeg");
 ffmpeg.setFfmpegPath(ffmpegPath);
 async function streamAudio(req, res) {
     // Music streaming ow yeaaa
-    res.contentType("mp3");
-
     var pathToSong = "";
     if (req.params.songid !== "undefined") {
+        res.contentType("mp3");
         await Album.findOne({ "songs._id": req.params.songid }).then(
             (response) => {
                 pathToSong =
@@ -88,18 +86,10 @@ function getAlbumIcon(req, res) {
         "Song/" + req.params.albumid + "/ico.jpg"
     );
     if (fs.existsSync(pathToImg)) {
-        sharp(pathToImg)
-            .resize(200, 200)
-            .toFile(
-                path.resolve(
-                    __dirname,
-                    "Song/" + req.params.albumid + "/ico200.jpg"
-                )
-            );
         res.sendFile(
             path.resolve(
                 __dirname,
-                "Song/" + req.params.albumid + "/ico200.jpg"
+                "Song/" + req.params.albumid + "/ico.jpg"
             )
         );
     } else {
