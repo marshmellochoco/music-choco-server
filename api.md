@@ -1,4 +1,4 @@
-# react-music-player-server API
+# music-choco-server API
 ### by marshmellochoco
 
 <table>

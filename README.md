@@ -1,4 +1,4 @@
-# react-music-player-server
+# music-choco-server
 
 Aim of this project is to create a audio streaming application that is similar to Spotify Web Player (but not a total clone of it). I created this project just to test out my React skills and to learn more about fullstack development also maintaining and managing a project.
 
@@ -6,14 +6,15 @@ Aim of this project is to create a audio streaming application that is similar t
 ### Pre-requisite
 - [NodeJS](https://nodejs.org/en/) (or npm)
 - MongoDB (I'm using [MongoDB Atlas](https://www.mongodb.com/cloud/atlas))
-- My [react-music-player](https://github.com/marshmellochoco/react-music-player) or your own developed music player!
+- My [music-choco](https://github.com/marshmellochoco/music-choco) or your own developed music player!
 
 ### Setting up development environment
 ```
-git clone https://github.com/marshmellochoco/react-music-player-server.git
-cd react-music-player && npm i
+git clone https://github.com/marshmellochoco/music-choco-server.git
+cd music-choco-server && npm i
 npm run start
 ```
+*Make sure the port is open (Default: 4000)* 
 
 You can find the list of API [here](api.md)
 
