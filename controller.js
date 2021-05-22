@@ -5,6 +5,7 @@ const fs = require("fs");
 const getMP3Duration = require("get-mp3-duration");
 const ffmpegPath = require("@ffmpeg-installer/ffmpeg").path;
 const ffmpeg = require("fluent-ffmpeg");
+const { ObjectID } = require("bson");
 ffmpeg.setFfmpegPath(ffmpegPath);
 async function streamAudio(req, res) {
     // Music streaming ow yeaaa
@@ -57,8 +58,8 @@ function addAlbum(req, res) {
 
 function getAlbum(req, res) {
     if (req.params.albumid !== "undefined") {
-        Album.findOne({ _id: req.params.albumid }).then((response) => {
-            res.send(response);
+        Album.findOne({ _id: req.params.albumid }).then((result) => {
+            res.send(result);
         });
     } else {
         res.status(404).send("Not found");
@@ -87,11 +88,20 @@ function getAlbumIcon(req, res) {
     );
     if (fs.existsSync(pathToImg)) {
         res.sendFile(
-            path.resolve(
-                __dirname,
-                "Song/" + req.params.albumid + "/ico.jpg"
-            )
+            path.resolve(__dirname, "Song/" + req.params.albumid + "/ico.jpg")
         );
+    } else {
+        res.status(404).send("Not found");
+    }
+}
+
+function searchAlbum(req, res) {
+    if (req.params.string !== "undefined" && req.params.string !== "") {
+        Album.find({
+            albumname: { $regex: req.params.string, $options: "i" },
+        })
+            .limit(10)
+            .then((result) => res.send(result));
     } else {
         res.status(404).send("Not found");
     }
@@ -112,31 +122,26 @@ function addSong(req, res) {
     res.send("Done");
 }
 
-async function getSongData(req, res) {
-    let albumid = "";
-    let artist = "";
+function getSong(req, res) {
     if (req.params.songid !== "undefined") {
-        await Album.findOne({ "songs._id": req.params.songid }).then(
-            (response) => {
-                albumid = response._id;
-                artist = response.artist;
-            }
-        );
-        Album.findOne(
-            { "songs._id": req.params.songid },
-            { "songs.$": 1 }
-        ).then((response) => {
-            res.write(
-                JSON.stringify({
-                    _id: response.songs[0]._id,
-                    title: response.songs[0].title,
-                    album: albumid,
-                    artist,
-                    duration: getSongDuration(albumid, req.params.songid),
-                })
-            );
-            res.end();
-        });
+        Album.aggregate([
+            {
+                $match: {
+                    "songs._id": ObjectID(req.params.songid),
+                },
+            },
+            {
+                $unwind: "$songs",
+            },
+            {
+                $match: {
+                    "songs._id": ObjectID(req.params.songid),
+                },
+            },
+            {
+                $limit: 1,
+            },
+        ]).then((result) => res.send(result));
     } else {
         res.status(404).send("Not found");
     }
@@ -148,6 +153,31 @@ function getSongDuration(album, song) {
     return duration;
 }
 
+function searchSong(req, res) {
+    if (req.params.string !== "undefined" && req.params.string !== "") {
+        Album.aggregate([
+            {
+                $match: {
+                    "songs.title": { $regex: req.params.string, $options: "i" },
+                },
+            },
+            {
+                $unwind: "$songs",
+            },
+            {
+                $match: {
+                    "songs.title": { $regex: req.params.string, $options: "i" },
+                },
+            },
+            {
+                $limit: 20,
+            },
+        ]).then((result) => res.send(result));
+    } else {
+        res.status(404).send("Not found");
+    }
+}
+
 module.exports = {
     streamAudio,
 
@@ -155,7 +185,9 @@ module.exports = {
     getAlbum,
     getAlbumList,
     getAlbumIcon,
+    searchAlbum,
 
     addSong,
-    getSongData,
+    getSong,
+    searchSong,
 };

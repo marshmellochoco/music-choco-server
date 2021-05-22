@@ -17,9 +17,11 @@ const {
     getAlbum,
     getAlbumList,
     getAlbumIcon,
+    searchAlbum,
 
     addSong,
-    getSongData,
+    getSong,
+    searchSong
 } = require("./controller");
 
 // Database
@@ -58,11 +60,19 @@ app.get("/album/:albumid/ico", (req, res) => {
     getAlbumIcon(req, res);
 });
 
+app.get("/album/search/:string", (req,res)=>{
+    searchAlbum(req,res);
+})
+
 // ---------- Songs ----------
 app.post("/song", (req, res) => {
     addSong(req, res);
 });
 
 app.get("/song/:songid", (req, res) => {
-    getSongData(req, res);
+    getSong(req, res);
 });
+
+app.get("/song/search/:string", (req,res)=>{
+    searchSong(req,res);
+})

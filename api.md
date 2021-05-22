@@ -36,6 +36,12 @@
             <td>Image</td>
         </tr>
         <tr>
+            <td>/album/search/:string</td>
+            <td>GET</td>
+            <td>List of album where the name matches the string</td>
+            <td>JSON</td>
+        </tr>
+        <tr>
             <td>/song</td>
             <td>POST</td>
             <td>"Done"</td>
@@ -52,6 +58,12 @@
             <td>GET</td>
             <td>Audio stream of a specific song</td>
             <td>Audio (.wav)</td>
+        </tr>
+        <tr>
+            <td>/songs/search/:string</td>
+            <td>GET</td>
+            <td>List of songs where the title matches the string</td>
+            <td>JSON</td>
         </tr>
     </tbody>
 </table>
