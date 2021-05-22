@@ -141,7 +141,7 @@ function getSong(req, res) {
             {
                 $limit: 1,
             },
-        ]).then((result) => res.send(result));
+        ]).then((result) => res.send(result[0]));
     } else {
         res.status(404).send("Not found");
     }
