@@ -8,6 +8,8 @@ const ffmpeg = require("fluent-ffmpeg");
 const { ObjectID, ObjectId } = require("bson");
 const multer = require("multer");
 ffmpeg.setFfmpegPath(ffmpegPath);
+
+
 async function streamAudio(req, res) {
     // Music streaming ow yeaaa
     var pathToSong = "";
@@ -72,14 +74,13 @@ async function addAlbum(req, res) {
                     albumDoc.save((err, album) => {
                         if (err) res.send(err);
                         else {
-                            res.send(albumDoc);
                             fs.mkdirSync("./Song/" + albumDoc._id);
                             fs.rename(
                                 "./Song/" + filename,
                                 "./Song/" + albumDoc._id + "/ico.png",
                                 (err) => {
                                     if (err) throw err;
-                                    console.log("Folder and icon added");
+                                    res.send(albumDoc);
                                 }
                             );
                         }
@@ -180,13 +181,12 @@ async function addSong(req, res) {
             { $push: { songs: songDoc } }
         )
             .then((result) => {
-                res.send(songDoc);
                 fs.rename(
                     "./Song/" + filename,
                     "./Song/" + req.body.albumID + "/" + songDoc._id,
                     (err) => {
                         if (err) throw err;
-                        console.log("Folder and icon added");
+                        res.send(songDoc);
                     }
                 );
             })
