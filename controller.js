@@ -5,7 +5,8 @@ const fs = require("fs");
 const getMP3Duration = require("get-mp3-duration");
 const ffmpegPath = require("@ffmpeg-installer/ffmpeg").path;
 const ffmpeg = require("fluent-ffmpeg");
-const { ObjectID } = require("bson");
+const { ObjectID, ObjectId } = require("bson");
+const multer = require("multer");
 ffmpeg.setFfmpegPath(ffmpegPath);
 async function streamAudio(req, res) {
     // Music streaming ow yeaaa
@@ -30,29 +31,66 @@ async function streamAudio(req, res) {
 }
 
 // ---------- Albums ----------
-function addAlbum(req, res) {
-    const albumDocument = new Album({
-        albumname: req.body.albumName,
-        artist: req.body.artist,
-        releaseDate: req.body.releaseDate,
-        songs: [],
+async function addAlbum(req, res) {
+    let filename = "";
+    let storage = multer.diskStorage({
+        destination: function (req, file, cb) {
+            cb(null, path.join(__dirname, "./Song"));
+        },
+        filename: function (req, file, cb) {
+            cb(null, file.originalname);
+            filename = file.originalname;
+        },
     });
 
-    Album.find({
-        albumname: req.body.albumName,
-        artist: req.body.artist,
-        releaseDate: req.body.releaseDate,
-    }).then((response) => {
-        if (response.length == 0) {
-            albumDocument
-                .save()
-                .then(res.send("Done"))
-                .catch((err) => {
-                    console.log(err);
-                });
-        } else {
-            res.status(409).send("The album is already exist in the system.");
+    let upload = multer({
+        storage: storage,
+        dest: "Song",
+    }).single("icon");
+
+    await upload(req, res, function (err) {
+        if (err instanceof multer.MulterError) {
+            return res.status(500).json(err);
+        } else if (err) {
+            return res.status(500).json(err);
         }
+
+        const albumDoc = new Album({
+            albumname: req.body.album,
+            artist: req.body.artist,
+            releaseDate: Date.parse(req.body.releaseDate),
+            songs: [],
+        });
+
+        Album.find({
+            albumname: req.body.albumName,
+            artist: req.body.artist,
+            releaseDate: req.body.releaseDate,
+        })
+            .then((response) => {
+                if (response.length == 0) {
+                    albumDoc.save((err, album) => {
+                        if (err) res.send(err);
+                        else {
+                            res.send(albumDoc);
+                            fs.mkdirSync("./Song/" + albumDoc._id);
+                            fs.rename(
+                                "./Song/" + filename,
+                                "./Song/" + albumDoc._id + "/ico.png",
+                                (err) => {
+                                    if (err) throw err;
+                                    console.log("Folder and icon added");
+                                }
+                            );
+                        }
+                    });
+                } else {
+                    res.status(400).send(
+                        "The album is already exist in the system."
+                    );
+                }
+            })
+            .catch((err) => res.status(500).send(err));
     });
 }
 
@@ -108,18 +146,52 @@ function searchAlbum(req, res) {
 }
 
 // ---------- Songs ----------
-function addSong(req, res) {
-    const songDocument = new Song({
-        duration: req.body.duration,
-        title: req.body.title,
+async function addSong(req, res) {
+    let filename = "";
+    let storage = multer.diskStorage({
+        destination: function (req, file, cb) {
+            cb(null, path.join(__dirname, "./Song"));
+        },
+        filename: function (req, file, cb) {
+            cb(null, file.originalname);
+            filename = file.originalname;
+        },
     });
 
-    Album.updateOne(
-        { albumname: req.body.albumname },
-        { $push: { songs: songDocument } }
-    ).then((result) => console.log(result));
+    let upload = multer({
+        storage: storage,
+        dest: "Song",
+    }).single("file");
 
-    res.send("Done");
+    await upload(req, res, function (err) {
+        if (err instanceof multer.MulterError) {
+            return res.status(500).json(err);
+        } else if (err) {
+            return res.status(500).json(err);
+        }
+
+        const songDoc = new Song({
+            duration: getSongDuration(filename),
+            title: req.body.songName,
+        });
+
+        Album.updateOne(
+            { _id: ObjectId(req.body.albumID) },
+            { $push: { songs: songDoc } }
+        )
+            .then((result) => {
+                res.send(songDoc);
+                fs.rename(
+                    "./Song/" + filename,
+                    "./Song/" + req.body.albumID + "/" + songDoc._id,
+                    (err) => {
+                        if (err) throw err;
+                        console.log("Folder and icon added");
+                    }
+                );
+            })
+            .catch((err) => res.status(500).send(err));
+    });
 }
 
 function getSong(req, res) {
@@ -147,10 +219,10 @@ function getSong(req, res) {
     }
 }
 
-function getSongDuration(album, song) {
-    const buffer = fs.readFileSync("./Song/" + album + "/" + song + ".mp3");
+function getSongDuration(song) {
+    const buffer = fs.readFileSync("./Song/" + song);
     const duration = getMP3Duration(buffer) / 1000;
-    return duration;
+    return Math.floor(duration);
 }
 
 function searchSong(req, res) {
