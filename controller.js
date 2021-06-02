@@ -9,7 +9,6 @@ const { ObjectID, ObjectId } = require("bson");
 const multer = require("multer");
 ffmpeg.setFfmpegPath(ffmpegPath);
 
-
 async function streamAudio(req, res) {
     // Music streaming ow yeaaa
     var pathToSong = "";
@@ -96,28 +95,28 @@ async function addAlbum(req, res) {
 }
 
 function getAlbum(req, res) {
-    if (req.params.albumid !== "undefined") {
-        Album.findOne({ _id: req.params.albumid }).then((result) => {
+    Album.findOne({ _id: req.params.albumid })
+        .then((result) => {
             res.send(result);
-        });
-    } else {
-        res.status(404).send("Not found");
-    }
+        })
+        .catch((err) => res.status(400).send(err));
 }
 
 function getAlbumList(req, res) {
-    Album.find().then((response) => {
-        let albumList = [];
-        response.map((r) => {
-            albumList.push({
-                id: r._id,
-                albumname: r.albumname,
-                artist: r.artist,
-                releaseDate: r.releaseDate,
+    let albumList = [];
+    Album.find()
+        .then((response) => {
+            response.map((r) => {
+                albumList.push({
+                    id: r._id,
+                    albumname: r.albumname,
+                    artist: r.artist,
+                    releaseDate: r.releaseDate,
+                });
             });
-        });
-        res.send(albumList);
-    });
+            res.send(albumList);
+        })
+        .catch((err) => res.status(400).send(err));
 }
 
 function getAlbumIcon(req, res) {
@@ -125,12 +124,13 @@ function getAlbumIcon(req, res) {
         __dirname,
         "Song/" + req.params.albumid + "/ico.jpg"
     );
+
     if (fs.existsSync(pathToImg)) {
         res.sendFile(
             path.resolve(__dirname, "Song/" + req.params.albumid + "/ico.jpg")
         );
     } else {
-        res.status(404).send("Not found");
+        res.status(404).send(req.params);
     }
 }
 
@@ -142,7 +142,7 @@ function searchAlbum(req, res) {
             .limit(10)
             .then((result) => res.send(result));
     } else {
-        res.status(404).send("Not found");
+        res.status(400).send(req.params);
     }
 }
 
@@ -215,14 +215,8 @@ function getSong(req, res) {
             },
         ]).then((result) => res.send(result[0]));
     } else {
-        res.status(404).send("Not found");
+        res.status(404).send(req.params);
     }
-}
-
-function getSongDuration(song) {
-    const buffer = fs.readFileSync("./Song/" + song);
-    const duration = getMP3Duration(buffer) / 1000;
-    return Math.floor(duration);
 }
 
 function searchSong(req, res) {
@@ -248,6 +242,12 @@ function searchSong(req, res) {
     } else {
         res.status(404).send("Not found");
     }
+}
+
+function getSongDuration(song) {
+    const buffer = fs.readFileSync("./Song/" + song);
+    const duration = getMP3Duration(buffer) / 1000;
+    return Math.floor(duration);
 }
 
 module.exports = {
