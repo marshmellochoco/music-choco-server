@@ -1,12 +1,14 @@
 const { Song, Album } = require("./models/albums");
 
-const path = require("path");
 const fs = require("fs");
-const getMP3Duration = require("get-mp3-duration");
+const uuid = require("uuid");
+const path = require("path");
+const Jimp = require("jimp");
+const multer = require("multer");
 const ffmpegPath = require("@ffmpeg-installer/ffmpeg").path;
 const ffmpeg = require("fluent-ffmpeg");
+const getMP3Duration = require("get-mp3-duration");
 const { ObjectID, ObjectId } = require("bson");
-const multer = require("multer");
 ffmpeg.setFfmpegPath(ffmpegPath);
 
 async function streamAudio(req, res) {
@@ -33,14 +35,18 @@ async function streamAudio(req, res) {
 
 // ---------- Albums ----------
 async function addAlbum(req, res) {
-    let filename = "";
+    let allowed = [".png", ".jpeg", ".jpg", ".bmp", ".tiff"];
+    let filename = uuid.v4();
     let storage = multer.diskStorage({
         destination: function (req, file, cb) {
             cb(null, path.join(__dirname, "./Song"));
         },
         filename: function (req, file, cb) {
-            cb(null, file.originalname);
-            filename = file.originalname;
+            if (!allowed.includes(path.extname(file.originalname))) {
+                res.status(400).send(req.body);
+            }
+            cb(null, filename + path.extname(file.originalname));
+            filename += path.extname(file.originalname);
         },
     });
 
@@ -74,23 +80,30 @@ async function addAlbum(req, res) {
                         if (err) res.send(err);
                         else {
                             fs.mkdirSync("./Song/" + albumDoc._id);
-                            fs.rename(
-                                "./Song/" + filename,
-                                "./Song/" + albumDoc._id + "/ico.png",
-                                (err) => {
-                                    if (err) throw err;
-                                    res.send(albumDoc);
-                                }
-                            );
+                            Jimp.read("./Song/" + filename, (err, img) => {
+                                if (err) throw err;
+                                img.resize(200, 200)
+                                    .writeAsync(
+                                        "./Song/" + albumDoc._id + "/icon.jpg"
+                                    )
+                                    .then(
+                                        fs.unlink(
+                                            "./Song/" + filename,
+                                            (err) => {
+                                                if (err) throw err;
+                                            }
+                                        )
+                                    );
+                            }).then(res.send(albumDoc));
                         }
                     });
                 } else {
-                    res.status(400).send(
-                        "The album is already exist in the system."
-                    );
+                    res.status(400).send(req.body);
                 }
             })
-            .catch((err) => res.status(500).send(err));
+            .catch((err) => {
+                res.status(400).send(err);
+            });
     });
 }
 
@@ -148,14 +161,17 @@ function searchAlbum(req, res) {
 
 // ---------- Songs ----------
 async function addSong(req, res) {
-    let filename = "";
+    let allowed = [".mp3"];
+    let filename = uuid.v4();
     let storage = multer.diskStorage({
         destination: function (req, file, cb) {
             cb(null, path.join(__dirname, "./Song"));
         },
         filename: function (req, file, cb) {
-            cb(null, file.originalname);
-            filename = file.originalname;
+            if (!allowed.includes(path.extname(file.originalname))) {
+                res.status(400).send(req.body);
+            }
+            cb(null, filename);
         },
     });
 
@@ -190,7 +206,7 @@ async function addSong(req, res) {
                     }
                 );
             })
-            .catch((err) => res.status(500).send(err));
+            .catch((err) => res.status(400).send(err));
     });
 }
 
