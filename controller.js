@@ -14,18 +14,16 @@ ffmpeg.setFfmpegPath(ffmpegPath);
 async function streamAudio(req, res) {
     if (!ObjectID.isValid(req.params.songid)) {
         res.status(400).send(req.params);
-        return
+        return;
     }
 
     // Music streaming ow yeaaa
     var pathToSong = "";
-    res.contentType("mp3");
     await Album.findOne({ "songs._id": req.params.songid })
         .then((response) => {
-            pathToSong =
-                "./Song/" + response._id + "/" + req.params.songid + ".mp3";
+            pathToSong = `./Song/${response._id}/${req.params.songid}.mp3`;
         })
-        .catch(res.status(400).send(req.params));
+        .catch((err) => res.status(400).send(err));
     var proc = ffmpeg(pathToSong)
         .toFormat("wav")
         .on("end", function () {})
@@ -80,16 +78,16 @@ async function addAlbum(req, res) {
                     albumDoc.save((err, album) => {
                         if (err) res.send(err);
                         else {
-                            fs.mkdirSync("./Song/" + albumDoc._id);
-                            Jimp.read("./Song/" + filename, (err, img) => {
+                            fs.mkdirSync(`./Song/${albumDoc._id}`);
+                            Jimp.read(`./Song/${filename}`, (err, img) => {
                                 if (err) throw err;
                                 img.resize(200, 200)
                                     .writeAsync(
-                                        "./Song/" + albumDoc._id + "/icon.jpg"
+                                        `./Song/${albumDoc._id}/icon.jpg`
                                     )
                                     .then(
                                         fs.unlink(
-                                            "./Song/" + filename,
+                                            `./Song/${filename}`,
                                             (err) => {
                                                 if (err) throw err;
                                             }
@@ -136,12 +134,12 @@ function getAlbumList(req, res) {
 function getAlbumIcon(req, res) {
     let pathToImg = path.resolve(
         __dirname,
-        "Song/" + req.params.albumid + "/ico.jpg"
+        `Song/${req.params.albumid}/ico.jpg`
     );
 
     if (fs.existsSync(pathToImg)) {
         res.sendFile(
-            path.resolve(__dirname, "Song/" + req.params.albumid + "/ico.jpg")
+            path.resolve(__dirname, `Song/${req.params.albumid}/ico.jpg`)
         );
     } else {
         res.status(404).send(req.params);
@@ -199,8 +197,8 @@ async function addSong(req, res) {
         )
             .then((result) => {
                 fs.rename(
-                    "./Song/" + filename,
-                    "./Song/" + req.body.albumID + "/" + songDoc._id,
+                    `./Song/${filename}`,
+                    `./Song/${req.body.albumID}/${songDoc._id}`,
                     (err) => {
                         if (err) throw err;
                         res.send(songDoc);
@@ -264,7 +262,7 @@ function searchSong(req, res) {
 }
 
 function getSongDuration(song) {
-    const buffer = fs.readFileSync("./Song/" + song);
+    const buffer = fs.readFileSync(`./Song/${song}`);
     const duration = getMP3Duration(buffer) / 1000;
     return Math.floor(duration);
 }
