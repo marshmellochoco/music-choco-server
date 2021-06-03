@@ -12,25 +12,26 @@ const { ObjectID, ObjectId } = require("bson");
 ffmpeg.setFfmpegPath(ffmpegPath);
 
 async function streamAudio(req, res) {
+    if (!ObjectID.isValid(req.params.songid)) {
+        res.status(400).send(req.params);
+        return
+    }
+
     // Music streaming ow yeaaa
     var pathToSong = "";
-    if (req.params.songid !== "undefined") {
-        res.contentType("mp3");
-        await Album.findOne({ "songs._id": req.params.songid }).then(
-            (response) => {
-                pathToSong =
-                    "./Song/" + response._id + "/" + req.params.songid + ".mp3";
-            }
-        );
-        var proc = ffmpeg(pathToSong)
-            .toFormat("wav")
-            .on("end", function () {})
-            .on("error", function (err) {})
-            // save to stream
-            .pipe(res, { end: true });
-    } else {
-        res.status(404).send("Not found");
-    }
+    res.contentType("mp3");
+    await Album.findOne({ "songs._id": req.params.songid })
+        .then((response) => {
+            pathToSong =
+                "./Song/" + response._id + "/" + req.params.songid + ".mp3";
+        })
+        .catch(res.status(400).send(req.params));
+    var proc = ffmpeg(pathToSong)
+        .toFormat("wav")
+        .on("end", function () {})
+        .on("error", function (err) {})
+        // save to stream
+        .pipe(res, { end: true });
 }
 
 // ---------- Albums ----------
@@ -211,7 +212,7 @@ async function addSong(req, res) {
 }
 
 function getSong(req, res) {
-    if (req.params.songid !== "undefined") {
+    if (ObjectID.isValid(req.params.songid)) {
         Album.aggregate([
             {
                 $match: {
@@ -229,9 +230,11 @@ function getSong(req, res) {
             {
                 $limit: 1,
             },
-        ]).then((result) => res.send(result[0]));
+        ])
+            .then((result) => res.send(result[0]))
+            .catch((err) => res.status(400).send(err));
     } else {
-        res.status(404).send(req.params);
+        res.status(400).send(req.params);
     }
 }
 
