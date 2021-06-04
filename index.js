@@ -24,6 +24,7 @@ const {
     searchSong,
 
     getToken,
+    addUser,
     authenticateToken,
 } = require("./controller");
 
@@ -63,9 +64,9 @@ app.get("/album/:albumid/ico", (req, res) => {
     getAlbumIcon(req, res);
 });
 
-app.get("/album/search/:string", (req,res)=>{
-    searchAlbum(req,res);
-})
+app.get("/album/search/:string", (req, res) => {
+    searchAlbum(req, res);
+});
 
 // ---------- Songs ----------
 app.post("/song", authenticateToken, (req, res) => {
@@ -76,15 +77,19 @@ app.get("/song/:songid", (req, res) => {
     getSong(req, res);
 });
 
-app.get("/song/search/:string", (req,res)=>{
-    searchSong(req,res);
-})
+app.get("/song/search/:string", (req, res) => {
+    searchSong(req, res);
+});
 
 // ---------- Auth ----------
-app.post("/login", (req,res)=>{
-    getToken(req,res);
-})
+app.post("/login", (req, res) => {
+    getToken(req, res);
+});
 
-app.get('/auth', authenticateToken, (req,res) => {
-    res.send(req.user)
-})
+app.post("/register", (req, res) => {
+    addUser(req, res);
+});
+
+app.get("/auth", authenticateToken, (req, res) => {
+    res.send(req.user);
+});

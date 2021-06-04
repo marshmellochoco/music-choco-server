@@ -1,4 +1,5 @@
 const { Song, Album } = require("./models/albums");
+const { User } = require("./models/user");
 
 const fs = require("fs");
 const uuid = require("uuid");
@@ -275,7 +276,48 @@ function getToken(req, res) {
         .createHash("sha256")
         .update(JSON.stringify(req.body.credentials))
         .digest("hex");
-    res.send({ token: generateToken(req.body.credentials) });
+    User.find({ hash: authHash })
+        .then((response) => {
+            if (response.length == 0) {
+                res.status(401).send(req.body);
+                return;
+            } else {
+                res.send({ token: generateToken(req.body.credentials) });
+            }
+        })
+        .catch((err) => res.status(400).send(err));
+}
+
+function addUser(req, res) {
+    const authHash = crypto
+        .createHash("sha256")
+        .update(JSON.stringify(req.body.credentials))
+        .digest("hex");
+
+    User.find({ hash: authHash })
+        .then((response) => {
+            if (response.length == 0) {
+                const userDoc = new User({
+                    hash: authHash,
+                });
+                userDoc.save((err) => {
+                    if (err) {
+                        console.log(err);
+                        res.status(400).send(err);
+                    } else {
+                        res.send({
+                            token: generateToken(req.body.credentials),
+                        });
+                    }
+                });
+            } else {
+                res.status(400).send(req.body);
+            }
+        })
+        .catch((err) => {
+            console.log(err);
+            res.status(400).send(err);
+        });
 }
 
 function authenticateToken(req, res, next) {
@@ -309,5 +351,6 @@ module.exports = {
     searchSong,
 
     getToken,
+    addUser,
     authenticateToken,
 };
