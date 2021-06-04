@@ -12,7 +12,7 @@ Aim of this project is to create a audio streaming application that is similar t
 ```
 git clone https://github.com/marshmellochoco/music-choco-server.git
 cd music-choco-server && npm i
-npm run start
+npm run dev
 ```
 *Make sure the port is open (Default: 4000)* 
 
