@@ -4,7 +4,9 @@ const fs = require("fs");
 const uuid = require("uuid");
 const path = require("path");
 const Jimp = require("jimp");
+const crypto = require("crypto");
 const multer = require("multer");
+const jwt = require("jsonwebtoken");
 const ffmpegPath = require("@ffmpeg-installer/ffmpeg").path;
 const ffmpeg = require("fluent-ffmpeg");
 const getMP3Duration = require("get-mp3-duration");
@@ -267,6 +269,34 @@ function getSongDuration(song) {
     return Math.floor(duration);
 }
 
+// ---------- Auth ----------
+function getToken(req, res) {
+    const authHash = crypto
+        .createHash("sha256")
+        .update(JSON.stringify(req.body.credentials))
+        .digest("hex");
+    res.send({ token: generateToken(req.body.credentials) });
+}
+
+function authenticateToken(req, res, next) {
+    const authHeader = req.headers["authorization"];
+    const token = authHeader && authHeader.split(" ")[1];
+
+    if (token == null) return res.sendStatus(401);
+
+    jwt.verify(token, process.env.SECRET_TOKEN, (err, user) => {
+        if (err) return res.sendStatus(403);
+        req.user = user;
+    });
+    next();
+}
+
+function generateToken(credentials) {
+    return jwt.sign(credentials, process.env.SECRET_TOKEN, {
+        expiresIn: "1800s",
+    });
+}
+
 module.exports = {
     streamAudio,
 
@@ -279,4 +309,7 @@ module.exports = {
     addSong,
     getSong,
     searchSong,
+
+    getToken,
+    authenticateToken,
 };

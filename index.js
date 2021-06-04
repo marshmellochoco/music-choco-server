@@ -21,7 +21,10 @@ const {
 
     addSong,
     getSong,
-    searchSong
+    searchSong,
+
+    getToken,
+    authenticateToken,
 } = require("./controller");
 
 // Database
@@ -44,7 +47,7 @@ app.get("/song/play/:songid", (req, res) => {
 });
 
 // ---------- Albums ----------
-app.post("/album", (req, res) => {
+app.post("/album", authenticateToken, (req, res) => {
     addAlbum(req, res);
 });
 
@@ -65,7 +68,7 @@ app.get("/album/search/:string", (req,res)=>{
 })
 
 // ---------- Songs ----------
-app.post("/song", (req, res) => {
+app.post("/song", authenticateToken, (req, res) => {
     addSong(req, res);
 });
 
@@ -75,4 +78,13 @@ app.get("/song/:songid", (req, res) => {
 
 app.get("/song/search/:string", (req,res)=>{
     searchSong(req,res);
+})
+
+// ---------- Auth ----------
+app.post("/login", (req,res)=>{
+    getToken(req,res);
+})
+
+app.get('/auth', authenticateToken, (req,res) => {
+    res.send(req.user)
 })
