@@ -1,19 +1,21 @@
-// Import Dependancies
+// ---------- Dependencies ----------
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const app = express();
 const port = process.env.PORT || 4000;
 
+// ---------- Components ----------
+const { albumRouter } = require("./_routes/albumRouter");
+const { authRouter } = require("./_routes/authRouter");
+const { songRouter } = require("./_routes/songRouter");
+
+// ---------- Express app initialization ----------
 app.use(cors());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-const { albumRouter } = require("./routes/albumRouter");
-const { authRouter } = require("./routes/authRouter");
-const { songRouter } = require("./routes/songRouter");
-
-// Database
+// ---------- Database ----------
 const mongoose = require("mongoose");
 const uri = process.env.URI;
 mongoose
@@ -27,7 +29,7 @@ mongoose
     })
     .catch((err) => console.log(err));
 
-// =============== API Routes ===============
+// ---------- API Routes ----------
 app.use("/api/album", albumRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/song", songRouter);

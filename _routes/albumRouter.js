@@ -1,12 +1,12 @@
 const express = require("express");
 const {
-    authenticateToken,
     getAlbum,
     getAlbumIcon,
     addAlbum,
     getAlbumList,
     searchAlbum,
-} = require("../controller");
+} = require("../_controller/albumController");
+const { authenticateToken } = require("../_controller/authController");
 
 const albumRouter = express.Router();
 

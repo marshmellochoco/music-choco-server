@@ -1,12 +1,15 @@
 const express = require("express");
+
+const { authenticateToken } = require("../_controller/authController");
 const {
-    authenticateToken,
-    getAudioFile,
-    streamAudio,
     searchSong,
     getSong,
     addSong,
-} = require("../controller");
+} = require("../_controller/songController");
+const {
+    getAudioFile,
+    streamAudio,
+} = require("../_controller/streamController");
 
 const songRouter = express.Router();
 songRouter.route("/").post(authenticateToken, (req, res) => addSong(req, res));
