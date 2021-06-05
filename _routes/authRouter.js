@@ -13,7 +13,6 @@ authRouter.route("/register").post((req, res) => {
     // add a user then send auth token
     addUser(req.body.credentials)
         .then((userDoc) => {
-            console.log(userDoc);
             generateToken(req.body.credentials).then((token) =>
                 res.send({ token })
             );
