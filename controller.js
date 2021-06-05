@@ -14,25 +14,28 @@ const getMP3Duration = require("get-mp3-duration");
 const { ObjectID, ObjectId } = require("bson");
 ffmpeg.setFfmpegPath(ffmpegPath);
 
-async function streamAudio(req, res) {
-    if (!ObjectID.isValid(req.params.songid)) {
-        res.status(400).send(req.params);
-        return;
-    }
-
-    // Music streaming ow yeaaa
+async function getAudioFile(songid) {
+    if (!ObjectID.isValid(songid)) throw "Invalid song id";
     var pathToSong = "";
-    await Album.findOne({ "songs._id": req.params.songid })
+    await Album.findOne({ "songs._id": songid })
         .then((response) => {
-            pathToSong = `./Song/${response._id}/${req.params.songid}.mp3`;
+            pathToSong = `./Song/${response._id}/${songid}.mp3`;
         })
-        .catch((err) => res.status(400).send(err));
+        .catch((err) => {
+            throw err;
+        });
+    return pathToSong;
+}
+
+function streamAudio(res, pathToSong) {
+    // Music streaming ow yeaaa
     var proc = ffmpeg(pathToSong)
         .toFormat("wav")
         .on("end", function () {})
         .on("error", function (err) {})
         // save to stream
         .pipe(res, { end: true });
+    return proc;
 }
 
 // ---------- Albums ----------
@@ -109,17 +112,9 @@ async function addAlbum(req, res) {
     });
 }
 
-function getAlbum(req, res) {
-    Album.findOne({ _id: req.params.albumid })
-        .then((result) => {
-            res.send(result);
-        })
-        .catch((err) => res.status(400).send(err));
-}
-
-function getAlbumList(req, res) {
+async function getAlbumList() {
     let albumList = [];
-    Album.find()
+    await Album.find()
         .then((response) => {
             response.map((r) => {
                 albumList.push({
@@ -129,36 +124,41 @@ function getAlbumList(req, res) {
                     releaseDate: r.releaseDate,
                 });
             });
-            res.send(albumList);
         })
-        .catch((err) => res.status(400).send(err));
+        .catch((err) => {
+            throw err;
+        });
+    return albumList;
 }
 
-function getAlbumIcon(req, res) {
-    let pathToImg = path.resolve(
-        __dirname,
-        `Song/${req.params.albumid}/ico.jpg`
-    );
-
-    if (fs.existsSync(pathToImg)) {
-        res.sendFile(
-            path.resolve(__dirname, `Song/${req.params.albumid}/ico.jpg`)
-        );
-    } else {
-        res.status(404).send(req.params);
-    }
+function getAlbumIcon(albumid) {
+    let pathToImg = path.resolve(__dirname, `Song/${albumid}/ico.jpg`);
+    let icon = fs.existsSync(pathToImg) ? pathToImg : undefined;
+    if (!icon) throw "Invalid album id";
+    return icon;
 }
 
-function searchAlbum(req, res) {
-    if (req.params.string !== "undefined" && req.params.string !== "") {
-        Album.find({
-            albumname: { $regex: req.params.string, $options: "i" },
+async function searchAlbum(string) {
+    if (string == "undefined" || string == "") throw "Invalid query string";
+    let albumList;
+    await Album.find({
+        albumname: { $regex: string, $options: "i" },
+    })
+        .limit(10)
+        .then((result) => (albumList = result));
+    return albumList;
+}
+
+async function getAlbum(albumid) {
+    let album;
+    await Album.findOne({ _id: albumid })
+        .then((result) => {
+            album = result;
         })
-            .limit(10)
-            .then((result) => res.send(result));
-    } else {
-        res.status(400).send(req.params);
-    }
+        .catch((err) => {
+            throw err;
+        });
+    return album;
 }
 
 // ---------- Songs ----------
@@ -212,112 +212,90 @@ async function addSong(req, res) {
     });
 }
 
-function getSong(req, res) {
-    if (ObjectID.isValid(req.params.songid)) {
-        Album.aggregate([
-            {
-                $match: {
-                    "songs._id": ObjectID(req.params.songid),
-                },
+async function getSong(songId) {
+    if (!ObjectID.isValid(songId)) throw "Invalid song id";
+    let song;
+    await Album.aggregate([
+        {
+            $match: {
+                "songs._id": ObjectID(songId),
             },
-            {
-                $unwind: "$songs",
+        },
+        {
+            $unwind: "$songs",
+        },
+        {
+            $match: {
+                "songs._id": ObjectID(songId),
             },
-            {
-                $match: {
-                    "songs._id": ObjectID(req.params.songid),
-                },
-            },
-            {
-                $limit: 1,
-            },
-        ])
-            .then((result) => res.send(result[0]))
-            .catch((err) => res.status(400).send(err));
-    } else {
-        res.status(400).send(req.params);
-    }
+        },
+        {
+            $limit: 1,
+        },
+    ])
+        .then((result) => {
+            song = result[0];
+        })
+        .catch((err) => {
+            throw err;
+        });
+    return song;
 }
 
-function searchSong(req, res) {
-    if (req.params.string !== "undefined" && req.params.string !== "") {
-        Album.aggregate([
-            {
-                $match: {
-                    "songs.title": { $regex: req.params.string, $options: "i" },
-                },
+async function searchSong(qString) {
+    if (qString == "undefined" || qString == "") throw "Invalid query string";
+    let songs;
+    await Album.aggregate([
+        {
+            $match: {
+                "songs.title": { $regex: qString, $options: "i" },
             },
-            {
-                $unwind: "$songs",
+        },
+        {
+            $unwind: "$songs",
+        },
+        {
+            $match: {
+                "songs.title": { $regex: qString, $options: "i" },
             },
-            {
-                $match: {
-                    "songs.title": { $regex: req.params.string, $options: "i" },
-                },
-            },
-            {
-                $limit: 20,
-            },
-        ]).then((result) => res.send(result));
-    } else {
-        res.status(404).send("Not found");
-    }
-}
-
-function getSongDuration(song) {
-    const buffer = fs.readFileSync(`./Song/${song}`);
-    const duration = getMP3Duration(buffer) / 1000;
-    return Math.floor(duration);
+        },
+        {
+            $limit: 20,
+        },
+    ]).then((result) => (songs = result));
+    return songs;
 }
 
 // ---------- Auth ----------
-function getToken(req, res) {
-    const authHash = crypto
-        .createHash("sha256")
-        .update(JSON.stringify(req.body.credentials))
-        .digest("hex");
-    User.find({ hash: authHash })
-        .then((response) => {
-            if (response.length == 0) {
-                res.status(401).send(req.body);
-                return;
-            } else {
-                res.send({ token: generateToken(req.body.credentials) });
-            }
-        })
-        .catch((err) => res.status(400).send(err));
-}
-
-function addUser(req, res) {
-    const authHash = crypto
-        .createHash("sha256")
-        .update(JSON.stringify(req.body.credentials))
-        .digest("hex");
-
-    User.find({ hash: authHash })
-        .then((response) => {
-            if (response.length == 0) {
-                const userDoc = new User({
-                    hash: authHash,
-                });
-                userDoc.save((err) => {
-                    if (err) {
-                        console.log(err);
-                        res.status(400).send(err);
-                    } else {
-                        res.send({
-                            token: generateToken(req.body.credentials),
-                        });
-                    }
-                });
-            } else {
-                res.status(400).send(req.body);
-            }
+async function generateToken(credentials) {
+    let authToken = "";
+    await getUser(credentials)
+        .then((user) => {
+            if (!user) return "";
+            authToken = jwt.sign(credentials, process.env.SECRET_TOKEN, {
+                expiresIn: "1800s",
+            });
         })
         .catch((err) => {
-            console.log(err);
-            res.status(400).send(err);
+            throw err;
         });
+    return authToken;
+}
+
+async function addUser(credentials) {
+    await getUser(credentials).then((user) => {
+        if (user) throw "User already exist";
+        const userDoc = new User({
+            hash: crypto
+                .createHash("sha256")
+                .update(JSON.stringify(credentials))
+                .digest("hex"),
+        });
+        userDoc.save((err) => {
+            if (err) throw err;
+        });
+    });
+    return credentials;
 }
 
 function authenticateToken(req, res, next) {
@@ -328,29 +306,45 @@ function authenticateToken(req, res, next) {
         if (err) return res.sendStatus(403);
         req.user = user;
     });
+
     next();
 }
 
-function generateToken(credentials) {
-    return jwt.sign(credentials, process.env.SECRET_TOKEN, {
-        expiresIn: "1800s",
-    });
+// ---------- Util ----------
+async function getUser(credentials) {
+    let user;
+    const authHash = crypto
+        .createHash("sha256")
+        .update(JSON.stringify(credentials))
+        .digest("hex");
+    await User.find({ hash: authHash })
+        .then((res) => {
+            if (res.length != 0) user = res[0];
+        })
+        .catch((err) => {
+            throw err;
+        });
+    return user;
+}
+
+function getSongDuration(song) {
+    const buffer = fs.readFileSync(`./Song/${song}`);
+    const duration = getMP3Duration(buffer) / 1000;
+    return Math.floor(duration);
 }
 
 module.exports = {
+    getAudioFile,
     streamAudio,
-
-    addAlbum,
-    getAlbum,
-    getAlbumList,
-    getAlbumIcon,
-    searchAlbum,
-
-    addSong,
-    getSong,
     searchSong,
-
-    getToken,
-    addUser,
+    getSong,
+    addSong,
+    getAlbum,
+    getAlbumIcon,
+    addAlbum,
+    getAlbumList,
+    searchAlbum,
     authenticateToken,
+    generateToken,
+    addUser,
 };
