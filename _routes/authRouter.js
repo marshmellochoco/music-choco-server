@@ -12,9 +12,12 @@ authRouter.route("/").post((req, res) => {
 authRouter.route("/register").post((req, res) => {
     // add a user then send auth token
     addUser(req.body.credentials)
-        .then((credentials) =>
-            generateToken(credentials).then((token) => res.send({ token }))
-        )
+        .then((userDoc) => {
+            console.log(userDoc);
+            generateToken(req.body.credentials).then((token) =>
+                res.send({ token })
+            );
+        })
         .catch((e) => res.status(400).send({ error: e.toString() }));
 });
 

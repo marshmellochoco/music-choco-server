@@ -9,16 +9,16 @@ const jwt = require("jsonwebtoken");
 async function addUser(credentials) {
     await getUser(credentials).then((user) => {
         if (user) throw "User already exist";
-        const userDoc = new User({
-            hash: crypto
-                .createHash("sha256")
-                .update(JSON.stringify(credentials))
-                .digest("hex"),
-        });
-        userDoc.save((err) => {
-            if (err) throw err;
-        });
     });
+
+    const userDoc = new User({
+        hash: crypto
+            .createHash("sha256")
+            .update(JSON.stringify(credentials))
+            .digest("hex"),
+    });
+
+    await userDoc.save();
     return credentials;
 }
 
