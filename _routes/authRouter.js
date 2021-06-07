@@ -26,7 +26,11 @@ authRouter.route("/signup").post((req, res) => {
 
 authRouter.route("/").get(authenticateToken, (req, res) => {
     if (req.user) {
-        res.send({ iat: req.user.exp, exp: req.user.exp });
+        res.send({
+            username: req.user.username,
+            iat: req.user.exp,
+            exp: req.user.exp,
+        });
     }
 });
 
