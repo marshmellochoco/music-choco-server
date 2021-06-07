@@ -28,7 +28,7 @@ async function generateToken(credentials) {
         .then((user) => {
             if (!user) return "";
             authToken = jwt.sign(credentials, process.env.SECRET_TOKEN, {
-                expiresIn: "1800s",
+                expiresIn: "1h",
             });
         })
         .catch((err) => {
@@ -42,7 +42,7 @@ function authenticateToken(req, res, next) {
     if (token == null) return res.sendStatus(401);
 
     jwt.verify(token, process.env.SECRET_TOKEN, (err, user) => {
-        if (err) return res.sendStatus(403);
+        if (err) return res.sendStatus(401);
         req.user = user;
     });
 
