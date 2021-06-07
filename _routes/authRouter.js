@@ -8,8 +8,8 @@ const {
 const authRouter = express.Router();
 authRouter.route("/login").post((req, res) => {
     // send auth token if user exists
-    generateToken(req.body.credentials).then((token) => {
-        res.send({ token });
+    generateToken(req.body.credentials).then((result) => {
+        res.send(result);
     });
 });
 
@@ -17,9 +17,9 @@ authRouter.route("/signup").post((req, res) => {
     // add a user then send auth token
     addUser(req.body.credentials)
         .then((userDoc) => {
-            generateToken(req.body.credentials).then((token) =>
-                res.send({ token })
-            );
+            generateToken(req.body.credentials).then((result) => {
+                res.send(result);
+            });
         })
         .catch((e) => res.status(400).send({ error: e.toString() }));
 });

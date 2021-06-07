@@ -24,9 +24,11 @@ async function addUser(credentials) {
 
 async function generateToken(credentials) {
     let authToken = "";
+    let userid = "";
     await getUser(credentials)
         .then((user) => {
             if (!user) return "";
+            userid = user._id;
             authToken = jwt.sign(credentials, process.env.SECRET_TOKEN, {
                 expiresIn: "1h",
             });
@@ -34,7 +36,7 @@ async function generateToken(credentials) {
         .catch((err) => {
             throw err;
         });
-    return authToken;
+    return { authToken, userid };
 }
 
 function authenticateToken(req, res, next) {
