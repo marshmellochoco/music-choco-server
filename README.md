@@ -21,16 +21,3 @@ npm run dev
 _Make sure the port is open (Default: 4000)_
 
 You can find the list of API [here](api.md)
-
-## npm packages used so far
-
--   [express](https://www.npmjs.com/package/express)
--   [cors](https://www.npmjs.com/package/cors)
--   [dotenv](https://www.npmjs.com/package/dotenv)
--   [mongoose](https://www.npmjs.com/package/mongoose)
--   [fluent-ffmpeg](https://www.npmjs.com/package/fluent-ffmpeg)
--   [get-mp3-duration](https://www.npmjs.com/package/get-mp3-duration)
--   [dotenv](https://www.npmjs.com/package/dotenv)
--   [multer](https://www.npmjs.com/package/multer)
--   [jimp](https://www.npmjs.com/package/jimp)
--   [jsonwebtoken](https://www.npmjs.com/package/jsonwebtoken)
