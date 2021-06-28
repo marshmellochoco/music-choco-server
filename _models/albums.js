@@ -10,7 +10,7 @@ const songSchema = new Schema({
 		type: String,
 		required: true,
 	},
-	filename: {
+	songDoc: {
 		type: String,
 		requires: true,
 	},
