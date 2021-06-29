@@ -95,14 +95,6 @@ conn.once('open', function () {
 				});
 			})
 			.catch((err) => res.status(400).send(err));
-
-		// const readStream = uploads.read({ filename: '549331f5501a9b062f1d98dd3be29536.mp3' });
-		// const writeStream = fs.createWriteStream('D://dataOutput.mp3');
-		// readStream.pipe(writeStream);
-		// TODO: Stream song from mongodb gridfs
-		// getAudioFile(req.params.songid).then((path) => {
-		// 	streamAudio(res, path);
-		// });
 	});
 
 	songRouter.route('/search/:string').get(async (req, res) => {
@@ -273,3 +265,5 @@ conn.once('open', function () {
 	app.use('/api/auth', authRouter);
 	app.use('/api/song', songRouter);
 });
+
+// TODO: Gotta tidy this up...
