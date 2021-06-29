@@ -139,7 +139,8 @@ async function getUser(credentials) {
 
 module.exports = {
 	authenticateToken,
-	upload,
+	getUser,
 	addAlbum,
 	generateToken,
+	upload,
 };

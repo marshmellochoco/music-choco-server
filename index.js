@@ -18,7 +18,8 @@ app.use(express.json());
 // ---------- Database ----------
 const { Song, Album } = require('./_models/albums');
 const mongoose = require('mongoose');
-const { authenticateToken, upload, generateToken, addAlbum } = require('./util');
+const { authenticateToken, generateToken, addAlbum, getUser, upload } = require('./util');
+const { User, Queue } = require('./_models/user');
 
 mongoose
 	.connect(process.env.URI, {
@@ -173,7 +174,6 @@ conn.once('open', function () {
 				).catch((err) => res.status(400).send(err));
 				gfs.delete(ObjectId(result[0].songs.songDoc), (err) => {
 					if (err) throw err;
-					console.log('done');
 					res.send(result);
 				});
 			});
@@ -260,10 +260,69 @@ conn.once('open', function () {
 		}
 	});
 
+	const userRouter = express.Router();
+	userRouter
+		.route('/queue')
+		.get(authenticateToken, (req, res) => {
+			// TODO: Return the list of queue of the user
+			getUser({ username: req.user.username, password: req.user.password }).then((result) => {
+				User.find({
+					hash: result.hash,
+				})
+					.then((result) => res.send(result[0]))
+					.catch((err) => res.status(400).send(err));
+			});
+		})
+		.post(authenticateToken, (req, res) => {
+			User.updateOne(
+				{ 'queue._id': ObjectId(req.body.queueid) },
+				{ $set: { 'queue.$.list': req.body.data } }
+			).then((result) => res.send(result));
+		});
+
+	userRouter.route('/queue/:queueid').get(authenticateToken, (req, res) => {
+		getUser({ username: req.user.username, password: req.user.password }).then((result) => {
+			User.aggregate([
+				{
+					$match: {
+						hash: result.hash,
+					},
+				},
+				{
+					$unwind: '$queue',
+				},
+				{
+					$match: {
+						'queue._id': ObjectId(req.params.queueid),
+					},
+				},
+				{
+					$limit: 1,
+				},
+			])
+				.then((result) => res.send(result[0]))
+				.catch((err) => res.status(400).send(err));
+		});
+	});
+
+	userRouter.route('/playing').post(authenticateToken, (req, res) => {
+		getUser({ username: req.user.username, password: req.user.password }).then((result) => {
+			User.updateOne(
+				{
+					hash: result.hash,
+				},
+				{ $set: { playingSong: req.body.songId } }
+			)
+				.then((result) => res.send(result))
+				.catch((err) => res.status(400).send(err));
+		});
+	});
+
 	// ---------- API Routes ----------
 	app.use('/api/album', albumRouter);
 	app.use('/api/auth', authRouter);
 	app.use('/api/song', songRouter);
+	app.use('/api/user', userRouter);
 });
 
 // TODO: Gotta tidy this up...
