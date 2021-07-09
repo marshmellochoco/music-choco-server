@@ -1,28 +1,21 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
+const { Playlist } = require("./playlist");
 const Schema = mongoose.Schema;
 
-const queueSchema = new Schema({
-	list: {
-		type: Array,
-		required: true,
-	},
-});
-
 const userSchema = new Schema(
-	{
-		hash: {
-			type: String,
-			required: true,
-		},
-		playingSong: {
-			type: String,
-		},
-		queue: [queueSchema],
-	},
-	{ timestamps: true }
+    {
+        hash: {
+            type: String,
+            required: true,
+        },
+        playingSong: {
+            type: String,
+        },
+        playlist: [Playlist.schema],
+    },
+    { timestamps: true }
 );
 
-const User = mongoose.model('User', userSchema);
-const Queue = mongoose.model('Queue', queueSchema);
+const User = mongoose.model("User", userSchema);
 
-module.exports = { User, Queue };
+module.exports = { User };
