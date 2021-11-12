@@ -1,221 +1,142 @@
-// ---------- Dependencies ----------
-const fs = require("fs");
-const { ObjectID, ObjectId } = require("bson");
-const mm = require("music-metadata");
-
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-const app = express();
-const port = process.env.PORT || 4000;
-
-// ---------- Express app initialization ----------
-app.use(cors());
-app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
-
-// ---------- Database ----------
-const { Song, Album } = require("./_models/albums");
 const mongoose = require("mongoose");
-const { authenticateToken, upload, getUser } = require("./util");
-const { User } = require("./_models/user");
-const { authRouter } = require("./routes/authRouter");
-const { albumRouter } = require("./routes/albumRouter");
-const { userRouter } = require("./routes/userRouter");
+const {
+    getArtistById,
+    getArtistAlbums,
+    getAlbumById,
+    getAlbumTracks,
+    getTrackById,
+    getFeaturedArtists,
+    getNewRelease,
+    getArtistTracks,
+} = require("./query");
+const PORT = 8000;
+const app = express();
+app.use(cors());
 
 mongoose
-    .connect(process.env.URI, {
+    .connect(process.env.MONGOBD_URI, {
         useNewUrlParser: true,
         useUnifiedTopology: true,
-        useCreateIndex: true,
     })
-    .then(() => {
-        console.log("Connected to MongoDB");
-        app.listen(port, () => {
-            console.log("Listening at http://localhost:" + port);
+    .then(() => console.log("Connected to MongoDB Data"));
+
+const audioConn = mongoose.createConnection(process.env.AUDIO_URI);
+audioConn.once("open", () => {
+    console.log("Connected to MongoDB Audio");
+    app.listen(PORT, () => {
+        console.log("Listening at http://localhost:" + PORT);
+    });
+
+    //#region Upload Track
+    // const fs = require("fs");
+    // app.get("/init", (req, res) => {
+    //     const fileName = "61582e4267d0bc1b70d1ae05";
+    //     const filePath = "./track/mmy.mp3";
+    //     const db = audioConn.db;
+    //     const bucket = new mongoose.mongo.GridFSBucket(db);
+    //     const videoUploadStream = bucket.openUploadStream(fileName);
+    //     const videoReadStream = fs.createReadStream(filePath);
+    //     videoReadStream.pipe(videoUploadStream);
+    //     res.status(200).send("done");
+    //     console.log("ok");
+    // });
+    //#endregion
+
+    app.get("/artist/:id", async (req, res) => {
+        if (!mongoose.isValidObjectId(req.params.id)) {
+            res.status(400).send("Invalid ID");
+            return;
+        }
+        res.send(await getArtistById(req.params.id));
+    });
+
+    app.get("/artist/:id/albums", async (req, res) => {
+        if (!mongoose.isValidObjectId(req.params.id)) {
+            res.status(400).send("Invalid ID");
+            return;
+        }
+        res.send(await getArtistAlbums(req.params.id));
+    });
+
+    app.get("/artist/:id/tracks", async (req, res) => {
+        res.send(await getArtistTracks(req.params.id));
+    });
+
+    app.get("/album/:id", async (req, res) => {
+        if (!mongoose.isValidObjectId(req.params.id)) {
+            res.status(400).send("Invalid ID");
+            return;
+        }
+        let album = await getAlbumById(req.params.id);
+        let tracks = await getAlbumTracks(req.params.id);
+        res.send({
+            ...album,
+            tracks,
         });
     });
 
-const conn = mongoose.createConnection(process.env.SONG_URI);
-
-conn.once("open", function () {
-    var gfs = new mongoose.mongo.GridFSBucket(conn.db, { bucketName: "song" });
-
-    // ---------- Routers ----------
-    const songRouter = require("express").Router();
-    songRouter.post(
-        "/",
-        authenticateToken,
-        upload.single("file"),
-        async (req, res) => {
-            const readStream = gfs.openDownloadStream(req.file.id);
-            const writeStream = fs.createWriteStream(
-                `./temp/${req.file.id}.mp3`
-            );
-
-            // Download file to local
-            await readStream.pipe(writeStream).once("finish", async () =>
-                mm
-                    // Upload file to database server
-                    .parseFile(`./temp/${req.file.id}.mp3`, {
-                        duration: true,
-                    })
-                    .then((metadata) => {
-                        // Delete local file once file is uploaded
-                        fs.unlink(`./temp/${req.file.id}.mp3`, (err) => {
-                            if (err) throw err;
-                        });
-
-                        const songDoc = new Song({
-                            duration: Math.floor(metadata.format.duration),
-                            title: metadata.common.title,
-                            songDoc: req.file.id,
-                        });
-
-                        // Create a new Album object in database
-                        Album.updateOne(
-                            { _id: ObjectId(req.body.albumID) },
-                            { $push: { songs: songDoc } }
-                        )
-                            .then((result) => res.send(result))
-                            .catch((err) => res.status(400).send(err));
-                    })
-            );
-        }
-    );
-
-    songRouter.route("/play/:songid").get(async (req, res) => {
-        if (!ObjectID.isValid(req.params.songid)) {
-            res.status(400).send("Invalid song ID.");
+    app.get("/album/:id/tracks", async (req, res) => {
+        if (!mongoose.isValidObjectId(req.params.id)) {
+            res.status(400).send("Invalid ID");
             return;
         }
-        // Find if any song in album matches songid
-        await Album.aggregate([
-            {
-                $match: {
-                    "songs._id": ObjectID(req.params.songid),
-                },
-            },
-            {
-                $unwind: "$songs",
-            },
-            {
-                $match: {
-                    "songs._id": ObjectID(req.params.songid),
-                },
-            },
-            {
-                $limit: 1,
-            },
-        ])
-            .then((result) => {
-                if (result.length <= 0) {
-                    res.status(404).send("Song not found.");
+        res.send(await getAlbumTracks(req.params.id));
+    });
+
+    app.get("/track/:id", async (req, res) => {
+        if (!mongoose.isValidObjectId(req.params.id)) {
+            res.status(400).send("Invalid ID");
+            return;
+        }
+        res.send(await getTrackById(req.params.id));
+    });
+
+    app.get("/track/:id/play", async (req, res) => {
+        if (!mongoose.isValidObjectId(req.params.id)) {
+            res.status(400).send("Invalid ID");
+            return;
+        }
+
+        const db = audioConn.db;
+        db.collection("fs.files").findOne(
+            { filename: req.params.id },
+            (err, audio) => {
+                if (err) {
+                    console.log(err);
                     return;
                 }
 
-                // Stream the song from database server to client
-                const readStream = gfs.openDownloadStream(
-                    ObjectId(result[0].songs.songDoc)
+                const contentLength = audio.length;
+                const start = 0;
+                const end = contentLength - 1;
+
+                const headers = {
+                    "Content-Range": `bytes ${start}-${end}/${contentLength}`,
+                    "Accept-Ranges": "bytes",
+                    "Content-Length": contentLength,
+                    "Content-Type": "audio/mp3",
+                };
+
+                res.writeHead(206, headers);
+
+                const bucket = new mongoose.mongo.GridFSBucket(db);
+                const downloadStream = bucket.openDownloadStreamByName(
+                    req.params.id,
+                    { start }
                 );
-                readStream.pipe(res, { end: true });
-            })
-            .catch((err) => res.status(400).send("Unknown error: " + err));
-    });
-
-    songRouter.route("/search/:string").get(async (req, res) => {
-        // return a list of songs that its title contains the string
-        if (req.params.string == "undefined" || req.params.string == "") {
-            res.status(400).send("Invalid query string");
-            return;
-        }
-        await Album.aggregate([
-            {
-                $match: {
-                    "songs.title": { $regex: req.params.string, $options: "i" },
-                },
-            },
-            {
-                $unwind: "$songs",
-            },
-            {
-                $match: {
-                    "songs.title": { $regex: req.params.string, $options: "i" },
-                },
-            },
-            {
-                $limit: 20,
-            },
-        ])
-            .then((result) => res.send(result))
-            .catch((err) => res.status(400).send("Unknown error: " + err));
-    });
-
-    songRouter
-        .route("/:songid")
-        .get(async (req, res) => {
-            if (!ObjectID.isValid(req.params.songid)) {
-                res.status(400).send("Invalid song id.");
-                return;
+                downloadStream.pipe(res);
             }
-            await Album.aggregate([
-                {
-                    $match: {
-                        "songs._id": ObjectID(req.params.songid),
-                    },
-                },
-                {
-                    $unwind: "$songs",
-                },
-                {
-                    $match: {
-                        "songs._id": ObjectID(req.params.songid),
-                    },
-                },
-                {
-                    $limit: 1,
-                },
-            ])
-                .then((result) => res.send(result[0]))
-                .catch((err) => res.status(400).send("Unknown error: " + err));
-        })
-        .delete((req, res) => {
-            Album.aggregate([
-                {
-                    $match: {
-                        "songs._id": ObjectId(req.params.songid),
-                    },
-                },
-                {
-                    $unwind: "$songs",
-                },
-                {
-                    $match: {
-                        "songs._id": ObjectId(req.params.songid),
-                    },
-                },
-                {
-                    $limit: 1,
-                },
-            ]).then(async (result) => {
-                Album.updateOne(
-                    { _id: ObjectId(result[0]._id) },
-                    { $pull: { songs: { _id: ObjectId(req.params.songid) } } }
-                ).catch((err) => res.status(400).send("Unknown error: " + err));
+        );
+    });
 
-                gfs.delete(ObjectId(result[0].songs.songDoc), (err) => {
-                    if (err) res.status(400).send("Unknown error: " + err);
-                    else res.send(result);
-                });
-            });
-        });
+    app.get("/featured-artists", async (req, res) => {
+        res.send(await getFeaturedArtists());
+    });
 
-    // ---------- API Routes ----------
-    app.get("/api", (req, res) => res.send("ok"));
-    app.use("/api/album", albumRouter);
-    app.use("/api/auth", authRouter);
-    app.use("/api/song", songRouter);
-    app.use("/api/user", userRouter);
+    app.get("/new-release", async (req, res) => {
+        res.send(await getNewRelease());
+    });
 });
-
-// TODO: Gotta tidy this up...
