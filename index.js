@@ -11,6 +11,13 @@ const {
     getFeaturedArtists,
     getNewRelease,
     getArtistTracks,
+    getPlaylsitById,
+    updatePlaylist,
+    deletePlaylist,
+    addPlaylist,
+    userAuth,
+    loginUser,
+    registerUser,
 } = require("./query");
 const PORT = 8000;
 const app = express();
@@ -45,9 +52,18 @@ audioConn.once("open", () => {
     // });
     //#endregion
 
+    app.get("/featured-artists", async (req, res) => {
+        res.send(await getFeaturedArtists());
+    });
+
+    app.get("/new-release", async (req, res) => {
+        res.send(await getNewRelease());
+    });
+
+    //#region Artist
     app.get("/artist/:id", async (req, res) => {
         if (!mongoose.isValidObjectId(req.params.id)) {
-            res.status(400).send("Invalid ID");
+            res.sendStatus(400);
             return;
         }
         res.send(await getArtistById(req.params.id));
@@ -55,7 +71,7 @@ audioConn.once("open", () => {
 
     app.get("/artist/:id/albums", async (req, res) => {
         if (!mongoose.isValidObjectId(req.params.id)) {
-            res.status(400).send("Invalid ID");
+            res.sendStatus(400);
             return;
         }
         res.send(await getArtistAlbums(req.params.id));
@@ -64,10 +80,12 @@ audioConn.once("open", () => {
     app.get("/artist/:id/tracks", async (req, res) => {
         res.send(await getArtistTracks(req.params.id));
     });
+    //#endregion
 
+    //#region Album
     app.get("/album/:id", async (req, res) => {
         if (!mongoose.isValidObjectId(req.params.id)) {
-            res.status(400).send("Invalid ID");
+            res.sendStatus(400);
             return;
         }
         let album = await getAlbumById(req.params.id);
@@ -80,15 +98,17 @@ audioConn.once("open", () => {
 
     app.get("/album/:id/tracks", async (req, res) => {
         if (!mongoose.isValidObjectId(req.params.id)) {
-            res.status(400).send("Invalid ID");
+            res.sendStatus(400);
             return;
         }
         res.send(await getAlbumTracks(req.params.id));
     });
+    //#endregion
 
+    //#region Track
     app.get("/track/:id", async (req, res) => {
         if (!mongoose.isValidObjectId(req.params.id)) {
-            res.status(400).send("Invalid ID");
+            res.sendStatus(400);
             return;
         }
         res.send(await getTrackById(req.params.id));
@@ -96,7 +116,7 @@ audioConn.once("open", () => {
 
     app.get("/track/:id/play", async (req, res) => {
         if (!mongoose.isValidObjectId(req.params.id)) {
-            res.status(400).send("Invalid ID");
+            res.sendStatus(400);
             return;
         }
 
@@ -131,12 +151,69 @@ audioConn.once("open", () => {
             }
         );
     });
+    //#endregion
 
-    app.get("/featured-artists", async (req, res) => {
-        res.send(await getFeaturedArtists());
+    //#region Playlist
+    app.post("/playlist", userAuth(req, res), async (req, res) => {
+        try {
+            res.send(await addPlaylist(req.body));
+        } catch (err) {
+            res.status(500).send(err);
+        }
     });
 
-    app.get("/new-release", async (req, res) => {
-        res.send(await getNewRelease());
+    app.get("/playlist/:id", async (req, res) => {
+        if (!mongoose.isValidObjectId(req.params.id)) {
+            res.sendStatus(400);
+            return;
+        }
+        res.send(await getPlaylsitById(req.params.id));
     });
+
+    app.put("/playlist/:id", userAuth(req, res), async (req, res) => {
+        if (!mongoose.isValidObjectId(req.params.id)) {
+            res.sendStatus(400);
+            return;
+        }
+        try {
+            res.send(await updatePlaylist(req.params.id));
+        } catch (err) {
+            res.status(500).send(err);
+        }
+    });
+
+    app.delete("/playlist/:id", userAuth(req, res), async (req, res) => {
+        if (!mongoose.isValidObjectId(req.params.id)) {
+            res.sendStatus(400);
+            return;
+        }
+
+        try {
+            res.send(await deletePlaylist(req.params.id));
+        } catch (err) {
+            res.status(500).send(err);
+        }
+    });
+    //#endregion
+
+    //#region Authentication
+    app.post("/login", async (req, res) => {
+        try {
+            let token = await loginUser(req.body.credential);
+            res.send(token);
+        } catch (err) {
+            res.sendStatus(err);
+        }
+    });
+
+    app.post("/register", async (req, res) => {
+        try {
+            let token = await registerUser(req.body.credential);
+            res.send(token);
+        } catch (err) {
+            res.sendStatus(err);
+        }
+    });
+
+    //#endregion
 });
