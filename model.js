@@ -64,6 +64,36 @@ const trackSchema = new Schema({
 });
 const Track = mongoose.model("Track", trackSchema);
 
+const userSchema = new Schema({
+    hash: {
+        type: String,
+        required: true,
+    },
+    displayName: {
+        type: String,
+        default: "User",
+    },
+    image: {
+        type: String,
+        default: "",
+    },
+    type: {
+        type: String,
+        required: true,
+    },
+    favouraiteArtist: {
+        type: [Schema.Types.ObjectId],
+        ref: Artist,
+        default: [],
+    },
+    favouraiteAlbum: {
+        type: [Schema.Types.ObjectId],
+        ref: Album,
+        default: [],
+    },
+});
+const User = mongoose.model("User", userSchema);
+
 const playlistSchema = new Schema({
     name: {
         type: String,
@@ -83,43 +113,5 @@ const playlistSchema = new Schema({
     },
 });
 const Playlist = mongoose.model("Playlist", playlistSchema);
-
-const userSchema = new Schema({
-    hash: {
-        type: String,
-        required: true,
-    },
-    displayName: {
-        type: String,
-        required: true,
-        default: "User",
-    },
-    image: {
-        type: String,
-        required: true,
-        default: "",
-    },
-    type: {
-        type: String,
-        required: true,
-    },
-    playlist: {
-        type: [Schema.Types.ObjectId],
-        ref: Playlist,
-        default: [],
-        // TODO: Add queue playlist as default
-    },
-    favouraiteArtist: {
-        type: [Schema.Types.ObjectId],
-        ref: Artist,
-        default: [],
-    },
-    favouraiteAlbum: {
-        type: [Schema.Types.ObjectId],
-        ref: Album,
-        default: [],
-    },
-});
-const User = mongoose.model("User", userSchema);
 
 module.exports = { Artist, Album, Track, Playlist, User };

@@ -1,5 +1,6 @@
 require("dotenv").config();
 const express = require("express");
+const bodyParser = require("body-parser");
 const cors = require("cors");
 const mongoose = require("mongoose");
 const {
@@ -22,6 +23,7 @@ const {
 const PORT = 8000;
 const app = express();
 app.use(cors());
+app.use(bodyParser.json());
 
 mongoose
     .connect(process.env.MONGOBD_URI, {
@@ -40,8 +42,8 @@ audioConn.once("open", () => {
     //#region Upload Track
     // const fs = require("fs");
     // app.get("/init", (req, res) => {
-    //     const fileName = "61582e4267d0bc1b70d1ae05";
-    //     const filePath = "./track/mmy.mp3";
+    //     const fileName = "61b63c6ae0c844376a66b4c2";
+    //     const filePath = "./track/ksk.mp3";
     //     const db = audioConn.db;
     //     const bucket = new mongoose.mongo.GridFSBucket(db);
     //     const videoUploadStream = bucket.openUploadStream(fileName);
@@ -154,7 +156,7 @@ audioConn.once("open", () => {
     //#endregion
 
     //#region Playlist
-    app.post("/playlist", userAuth(req, res), async (req, res) => {
+    app.post("/playlist", userAuth, async (req, res) => {
         try {
             res.send(await addPlaylist(req.body));
         } catch (err) {
@@ -170,7 +172,7 @@ audioConn.once("open", () => {
         res.send(await getPlaylsitById(req.params.id));
     });
 
-    app.put("/playlist/:id", userAuth(req, res), async (req, res) => {
+    app.put("/playlist/:id", userAuth, async (req, res) => {
         if (!mongoose.isValidObjectId(req.params.id)) {
             res.sendStatus(400);
             return;
@@ -182,7 +184,7 @@ audioConn.once("open", () => {
         }
     });
 
-    app.delete("/playlist/:id", userAuth(req, res), async (req, res) => {
+    app.delete("/playlist/:id", userAuth, async (req, res) => {
         if (!mongoose.isValidObjectId(req.params.id)) {
             res.sendStatus(400);
             return;
@@ -200,7 +202,7 @@ audioConn.once("open", () => {
     app.post("/login", async (req, res) => {
         try {
             let token = await loginUser(req.body.credential);
-            res.send(token);
+            res.send({ token });
         } catch (err) {
             res.sendStatus(err);
         }
@@ -209,7 +211,7 @@ audioConn.once("open", () => {
     app.post("/register", async (req, res) => {
         try {
             let token = await registerUser(req.body.credential);
-            res.send(token);
+            res.send({ token });
         } catch (err) {
             res.sendStatus(err);
         }
@@ -217,3 +219,5 @@ audioConn.once("open", () => {
 
     //#endregion
 });
+
+// TODO: Handle throw error exceptions

@@ -1,4 +1,6 @@
 const { Album, Artist, Track, User } = require("./model");
+const crypto = require("crypto");
+const jwt = require("jsonwebtoken");
 const limit = 20;
 
 const getFeaturedArtists = async () => {
@@ -23,6 +25,7 @@ const getNewRelease = async () => {
         "61576258f2654946c69d9380",
         "61582dd367d0bc1b70d1ae01",
         "61582e0467d0bc1b70d1ae03",
+        "61b63b6fe0c844376a66b4be",
     ];
     // TODO: Get new tracks
 
@@ -147,15 +150,16 @@ function generateToken(credentials) {
 }
 
 function getHash(credentials) {
-    return crypto
+    let hash = crypto
         .createHash("sha256")
         .update(JSON.stringify(credentials))
         .digest("hex");
+    return hash;
 }
 
 async function getUser(hash) {
     let user;
-    await User.find({ hash: hash })
+    await User.find({ hash })
         .then((res) => {
             if (res.length != 0) user = res[0];
         })
@@ -177,24 +181,28 @@ const userAuth = async (req, res, next) => {
 
 const registerUser = async (credential) => {
     // TODO: validate credential
-    await getUser(getHash(credential)).then((user) => {
+    let userHash = getHash(credential);
+    await getUser(userHash).then((user) => {
         if (user) throw "Already registered";
         const userDoc = new User({
-            hash: generateToken(credential),
+            hash: userHash,
             type: "user",
         });
         userDoc.save((err) => {
-            if (err) throw 409;
-            return generateToken(credential);
+            if (err) {
+                throw 409;
+            }
         });
     });
+    return generateToken(credential);
 };
 
 const loginUser = async (credential) => {
-    await getUser(credential).then((user) => {
+    let userHash = getHash(credential);
+    await getUser(userHash).then((user) => {
         if (!user) throw 401;
-        return generateToken(credential);
     });
+    return generateToken(credential);
 };
 //#endregion
 
