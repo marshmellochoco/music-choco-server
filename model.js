@@ -8,7 +8,7 @@ const artistSchema = new Schema({
     },
     image: {
         type: String,
-        required: true,
+        default: "",
     },
 });
 const Artist = mongoose.model("Artist", artistSchema);
@@ -28,7 +28,7 @@ const albumSchema = new Schema({
     },
     image: {
         type: String,
-        required: true,
+        default: "",
     },
     artists: {
         type: [Schema.Types.ObjectId],
@@ -94,24 +94,30 @@ const userSchema = new Schema({
 });
 const User = mongoose.model("User", userSchema);
 
-const playlistSchema = new Schema({
-    name: {
-        type: String,
-        required: true,
+const playlistSchema = new Schema(
+    {
+        name: {
+            type: String,
+            required: true,
+        },
+        image: {
+            type: String,
+            default: "",
+        },
+        tracks: [
+            {
+                type: [Schema.Types.ObjectId],
+                ref: Track,
+            },
+        ],
+        creator: {
+            type: [Schema.Types.ObjectId],
+            ref: User,
+            required: true,
+        },
     },
-    image: {
-        type: String,
-    },
-    creator: {
-        type: [Schema.Types.ObjectId],
-        ref: User,
-        required: true,
-    },
-    createdAt: {
-        type: Date,
-        required: true,
-    },
-});
+    { timestamps: true }
+);
 const Playlist = mongoose.model("Playlist", playlistSchema);
 
 module.exports = { Artist, Album, Track, Playlist, User };

@@ -156,7 +156,7 @@ audioConn.once("open", () => {
     //#endregion
 
     //#region Playlist
-    app.post("/playlist", userAuth, async (req, res) => {
+    app.post("/playlist", async (req, res) => {
         try {
             res.send(await addPlaylist(req.body));
         } catch (err) {
@@ -216,7 +216,6 @@ audioConn.once("open", () => {
             res.sendStatus(err);
         }
     });
-
     //#endregion
 });
 

@@ -1,4 +1,4 @@
-const { Album, Artist, Track, User } = require("./model");
+const { Album, Artist, Track, User, Playlist } = require("./model");
 const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
 const limit = 20;
@@ -127,10 +127,39 @@ const getTrackById = async (_id) => {
 //#region Playlist
 const addPlaylist = async (playlist) => {
     // TODO: Implementation
+    // const mongoose = require("mongoose");
+    // let newPl = new Playlist({
+    //     name: "My Playlist",
+    //     creator: new mongoose.Types.ObjectId("61ba3a6301fd5a697cc68a1e"),
+    // });
+    // newPl.save();
+    // return newPl;
 };
 
 const getPlaylsitById = async (_id) => {
-    // TODO: Implementation
+    let { _id, creator, createdAt, image, name, tracks, updatedAt } =
+        await Playlist.findOne({ _id });
+
+    let { displayName } = await getUserById(creator);
+
+    let completeTracks = [];
+    await Promise.all(
+        tracks.map(async (track) => {
+            let t = await getTrackById(track.toString());
+            completeTracks.push(t);
+        })
+    );
+
+    return {
+        _id,
+        createdAt,
+        displayName,
+        image,
+        name,
+        updatedAt,
+        tracks: completeTracks,
+        count: completeTracks.length,
+    };
 };
 
 const updatePlaylist = async (_id) => {
@@ -170,7 +199,7 @@ async function getUser(hash) {
 }
 
 const userAuth = async (req, res, next) => {
-    const token = req.headers["Authorization"];
+    const token = req.headers["authorization"];
     if (token == null) throw "Invalid token";
     jwt.verify(token, process.env.SECRET_TOKEN, (err, user) => {
         if (err) res.sendStatus(401);
@@ -180,7 +209,6 @@ const userAuth = async (req, res, next) => {
 };
 
 const registerUser = async (credential) => {
-    // TODO: validate credential
     let userHash = getHash(credential);
     await getUser(userHash).then((user) => {
         if (user) throw "Already registered";
@@ -203,6 +231,11 @@ const loginUser = async (credential) => {
         if (!user) throw 401;
     });
     return generateToken(credential);
+};
+
+const getUserById = async (_id) => {
+    let user = User.findOne({ _id });
+    return user;
 };
 //#endregion
 
