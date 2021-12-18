@@ -137,7 +137,7 @@ const addPlaylist = async (playlist) => {
 };
 
 const getPlaylsitById = async (_id) => {
-    let { _id, creator, createdAt, image, name, tracks, updatedAt } =
+    let { id, creator, createdAt, image, name, tracks, updatedAt } =
         await Playlist.findOne({ _id });
 
     let { displayName } = await getUserById(creator);
@@ -151,9 +151,9 @@ const getPlaylsitById = async (_id) => {
     );
 
     return {
-        _id,
+        _id: id,
         createdAt,
-        displayName,
+        creator: displayName,
         image,
         name,
         updatedAt,
