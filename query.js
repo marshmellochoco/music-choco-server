@@ -1,6 +1,7 @@
 const { Album, Artist, Track, User, Playlist } = require("./model");
 const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
+const mongoose = require("mongoose");
 const limit = 20;
 
 const getFeaturedArtists = async () => {
@@ -125,20 +126,24 @@ const getTrackById = async (_id) => {
 //#endregion
 
 //#region Playlist
-const addPlaylist = async (playlist) => {
+const addPlaylist = async ({ name, image = "", tracks = [], creator }) => {
     // TODO: Implementation
-    // const mongoose = require("mongoose");
-    // let newPl = new Playlist({
-    //     name: "My Playlist",
-    //     creator: new mongoose.Types.ObjectId("61ba3a6301fd5a697cc68a1e"),
-    // });
-    // newPl.save();
-    // return newPl;
+    getUserById(creator).then((result) => {
+        if (!result) throw 400;
+    });
+    let playlistDoc = new Playlist({
+        name,
+        image,
+        tracks,
+        creator: new mongoose.Types.ObjectId(creator),
+    });
+    // playlistDoc.save();
+    return playlistDoc;
 };
 
 const getPlaylsitById = async (_id) => {
     let { id, creator, createdAt, image, name, tracks, updatedAt } =
-        await Playlist.findOne({ _id });
+        await Playlist.findOne({ _id }).sort({ "tracks.0": 1 });
 
     let { displayName } = await getUserById(creator);
 
