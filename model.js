@@ -81,12 +81,12 @@ const userSchema = new Schema({
         type: String,
         required: true,
     },
-    favouraiteArtist: {
+    likedArtist: {
         type: [Schema.Types.ObjectId],
         ref: Artist,
         default: [],
     },
-    favouraiteAlbum: {
+    likedAlbum: {
         type: [Schema.Types.ObjectId],
         ref: Album,
         default: [],

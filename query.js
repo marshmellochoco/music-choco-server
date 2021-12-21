@@ -178,8 +178,46 @@ const deletePlaylist = async (_id) => {
 
 //#region User
 const getUserPlaylist = async (creator) => {
-    let playlists = Playlist.find({ creator });
+    let playlists = await Playlist.find({ creator });
     return playlists;
+};
+
+const getUserFavArtist = async (_id) => {
+    let user = await User.findOne({ _id });
+    let artists = [];
+    await Promise.all(
+        user.likedArtist.map(async (artist) => {
+            artists.push(await getArtistById(artist));
+        })
+    );
+    return artists;
+};
+
+const getUserFavAlbum = async (_id) => {
+    let user = await User.findOne({ _id });
+    let albums = [];
+    await Promise.all(
+        user.likedAlbum.map(async (album) => {
+            albums.push(await getAlbumById(album));
+        })
+    );
+    return albums;
+};
+
+const addUserFavArtist = async (_id, body) => {
+    return await User.findOneAndUpdate(
+        { _id },
+        { $push: { likedArtist: body.artist } },
+        { new: true }
+    );
+};
+
+const addUserFavAlbum = async (_id, body) => {
+    return await User.findOneAndUpdate(
+        { _id },
+        { $push: { likedAlbum: body.album } },
+        { new: true }
+    );
 };
 //#endregion
 
@@ -273,6 +311,10 @@ module.exports = {
     updatePlaylist,
     deletePlaylist,
     getUserPlaylist,
+    getUserFavArtist,
+    getUserFavAlbum,
+    addUserFavArtist,
+    addUserFavAlbum,
     userAuth,
     registerUser,
     loginUser,

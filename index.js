@@ -20,6 +20,10 @@ const {
     loginUser,
     registerUser,
     getUserPlaylist,
+    addUserFavArtist,
+    addUserFavAlbum,
+    getUserFavArtist,
+    getUserFavAlbum,
 } = require("./query");
 const PORT = 8000;
 const app = express();
@@ -159,7 +163,7 @@ audioConn.once("open", () => {
     //#region Playlist
     app.post("/playlist", userAuth, async (req, res) => {
         try {
-            res.send(await addPlaylist({...req.body, creator: req.user}));
+            res.send(await addPlaylist({ ...req.body, creator: req.user }));
         } catch (err) {
             res.status(500).send(err);
         }
@@ -202,6 +206,22 @@ audioConn.once("open", () => {
     //#region Library
     app.get("/library/playlist", userAuth, async (req, res) => {
         res.send(await getUserPlaylist(req.user));
+    });
+
+    app.get("/library/artist", userAuth, async (req, res) => {
+        res.send(await getUserFavArtist(req.user));
+    });
+
+    app.get("/library/album", userAuth, async (req, res) => {
+        res.send(await getUserFavAlbum(req.user));
+    });
+
+    app.put("/library/artist", userAuth, async (req, res) => {
+        res.send(await addUserFavArtist(req.user, req.body));
+    });
+
+    app.put("/library/album", userAuth, async (req, res) => {
+        res.send(await addUserFavAlbum(req.user, req.body));
     });
     //#endregion
 
