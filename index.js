@@ -12,13 +12,14 @@ const {
     getFeaturedArtists,
     getNewRelease,
     getArtistTracks,
-    getPlaylsitById,
+    getPlaylistById,
     updatePlaylist,
     deletePlaylist,
     addPlaylist,
     userAuth,
     loginUser,
     registerUser,
+    getUserPlaylist,
 } = require("./query");
 const PORT = 8000;
 const app = express();
@@ -156,9 +157,9 @@ audioConn.once("open", () => {
     //#endregion
 
     //#region Playlist
-    app.post("/playlist", async (req, res) => {
+    app.post("/playlist", userAuth, async (req, res) => {
         try {
-            res.send(await addPlaylist(req.body));
+            res.send(await addPlaylist({...req.body, creator: req.user}));
         } catch (err) {
             res.status(500).send(err);
         }
@@ -169,7 +170,7 @@ audioConn.once("open", () => {
             res.sendStatus(400);
             return;
         }
-        res.send(await getPlaylsitById(req.params.id));
+        res.send(await getPlaylistById(req.params.id));
     });
 
     app.put("/playlist/:id", async (req, res) => {
@@ -178,7 +179,7 @@ audioConn.once("open", () => {
             return;
         }
         try {
-            res.send(await updatePlaylist(req.params.id, req.body));
+            res.send(await updatePlaylist(req.params.id, req.body.playlist));
         } catch (err) {
             res.status(500).send(err);
         }
@@ -195,6 +196,12 @@ audioConn.once("open", () => {
         } catch (err) {
             res.status(500).send(err);
         }
+    });
+    //#endregion
+
+    //#region Library
+    app.get("/library/playlist", userAuth, async (req, res) => {
+        res.send(await getUserPlaylist(req.user));
     });
     //#endregion
 

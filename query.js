@@ -3,6 +3,7 @@ const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
 const mongoose = require("mongoose");
 const limit = 20;
+const playUrl = (id) => `${process.env.PLAY_URL}track/${id}/play/`;
 
 const getFeaturedArtists = async () => {
     let featured = [
@@ -58,6 +59,7 @@ const getArtistAlbums = async (_id) => {
             completeAlbums.push({ ...album._doc, artists });
         })
     );
+    completeAlbums.sort();
     return { items: [...completeAlbums], count: albums.length };
 };
 
@@ -66,13 +68,8 @@ const getArtistTracks = async (_id) => {
     let completeTracks = [];
     await Promise.all(
         tracks.map(async (track) => {
-            let artists = [];
-            await Promise.all(
-                track.artists.map(async (artist) => {
-                    artists.push(await getArtistById(artist));
-                })
-            );
-            completeTracks.push({ ...track._doc, artists });
+            let t = await getTrackById(track._id);
+            completeTracks.push(t);
         })
     );
     return completeTracks;
@@ -88,6 +85,7 @@ const getAlbumById = async (_id) => {
             artists.push(await getArtistById(artist));
         })
     );
+    artists.sort();
     return { ...album._doc, artists };
 };
 
@@ -96,13 +94,8 @@ const getAlbumTracks = async (_id) => {
     let completeTracks = [];
     await Promise.all(
         tracks.map(async (track) => {
-            let artists = [];
-            await Promise.all(
-                track.artists.map(async (artist) => {
-                    artists.push(await getArtistById(artist));
-                })
-            );
-            completeTracks.push({ ...track._doc, artists });
+            let t = await getTrackById(track._id);
+            completeTracks.push(t);
         })
     );
 
@@ -120,8 +113,8 @@ const getTrackById = async (_id) => {
             artists.push(await getArtistById(artist));
         })
     );
-
-    return { ...track._doc, album, artists };
+    artists.sort();
+    return { ...track._doc, url: playUrl(_id), album, artists };
 };
 //#endregion
 
@@ -140,7 +133,7 @@ const addPlaylist = async ({ name, image = "", tracks = [], creator }) => {
     return playlistDoc;
 };
 
-const getPlaylsitById = async (_id) => {
+const getPlaylistById = async (_id) => {
     let { id, creator, createdAt, image, name, tracks, updatedAt } =
         await Playlist.findOne({ _id }).sort({ "tracks.0": 1 });
 
@@ -153,7 +146,9 @@ const getPlaylsitById = async (_id) => {
             completeTracks.push(t);
         })
     );
-
+    completeTracks = completeTracks.sort(
+        (a, b) => tracks.indexOf(a._id) - tracks.indexOf(b._id)
+    );
     return {
         _id: id,
         createdAt,
@@ -178,6 +173,13 @@ const updatePlaylist = async (_id, body) => {
 const deletePlaylist = async (_id) => {
     let dlt = await Playlist.deleteOne({ _id });
     return dlt;
+};
+//#endregion
+
+//#region User
+const getUserPlaylist = async (creator) => {
+    let playlists = Playlist.find({ creator });
+    return playlists;
 };
 //#endregion
 
@@ -215,6 +217,14 @@ const userAuth = async (req, res, next) => {
         if (err) res.sendStatus(401);
         req.user = user;
     });
+    let { email, password } = req.user;
+    await getUser(getHash({ email, password }))
+        .then((resp) => {
+            req.user = resp._id.toString();
+        })
+        .catch((err) => {
+            throw err;
+        });
     next();
 };
 
@@ -259,9 +269,10 @@ module.exports = {
     getFeaturedArtists,
     getNewRelease,
     addPlaylist,
-    getPlaylsitById,
+    getPlaylistById,
     updatePlaylist,
     deletePlaylist,
+    getUserPlaylist,
     userAuth,
     registerUser,
     loginUser,
