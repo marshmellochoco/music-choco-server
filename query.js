@@ -127,7 +127,6 @@ const getTrackById = async (_id) => {
 
 //#region Playlist
 const addPlaylist = async ({ name, image = "", tracks = [], creator }) => {
-    // TODO: Implementation
     getUserById(creator).then((result) => {
         if (!result) throw 400;
     });
@@ -137,7 +136,7 @@ const addPlaylist = async ({ name, image = "", tracks = [], creator }) => {
         tracks,
         creator: new mongoose.Types.ObjectId(creator),
     });
-    // playlistDoc.save();
+    playlistDoc.save();
     return playlistDoc;
 };
 
@@ -167,12 +166,18 @@ const getPlaylsitById = async (_id) => {
     };
 };
 
-const updatePlaylist = async (_id) => {
-    // TODO: Implementation
+const updatePlaylist = async (_id, body) => {
+    let update = await Playlist.findOneAndUpdate(
+        { _id },
+        { ...body },
+        { new: true }
+    );
+    return update;
 };
 
 const deletePlaylist = async (_id) => {
-    // TODO: Implementation
+    let dlt = await Playlist.deleteOne({ _id });
+    return dlt;
 };
 //#endregion
 

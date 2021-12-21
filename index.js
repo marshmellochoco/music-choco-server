@@ -172,19 +172,19 @@ audioConn.once("open", () => {
         res.send(await getPlaylsitById(req.params.id));
     });
 
-    app.put("/playlist/:id", userAuth, async (req, res) => {
+    app.put("/playlist/:id", async (req, res) => {
         if (!mongoose.isValidObjectId(req.params.id)) {
             res.sendStatus(400);
             return;
         }
         try {
-            res.send(await updatePlaylist(req.params.id));
+            res.send(await updatePlaylist(req.params.id, req.body));
         } catch (err) {
             res.status(500).send(err);
         }
     });
 
-    app.delete("/playlist/:id", userAuth, async (req, res) => {
+    app.delete("/playlist/:id", async (req, res) => {
         if (!mongoose.isValidObjectId(req.params.id)) {
             res.sendStatus(400);
             return;
