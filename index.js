@@ -227,23 +227,15 @@ audioConn.once("open", () => {
 
     //#region Authentication
     app.post("/login", async (req, res) => {
-        try {
-            let token = await loginUser(req.body.credential);
-            res.send({ token });
-        } catch (err) {
-            res.sendStatus(err);
-        }
+        let token = await loginUser(req.body.credential);
+        if (!token.error) res.send({ token });
+        else res.sendStatus(token.error);
     });
 
     app.post("/register", async (req, res) => {
-        try {
-            let token = await registerUser(req.body.credential);
-            res.send({ token });
-        } catch (err) {
-            res.sendStatus(err);
-        }
+        let token = await registerUser(req.body.credential);
+        if (!token.error) res.send({ token });
+        else res.sendStatus(token.error);
     });
     //#endregion
 });
-
-// TODO: Handle throw error exceptions

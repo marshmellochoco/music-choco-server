@@ -250,45 +250,58 @@ async function getUser(hash) {
 
 const userAuth = async (req, res, next) => {
     const token = req.headers["authorization"];
-    if (token == null) throw "Invalid token";
+    if (token == null) {
+        res.status(401).send("Invalid token");
+        return;
+    }
+
+    let error = null;
     jwt.verify(token, process.env.SECRET_TOKEN, (err, user) => {
-        if (err) res.sendStatus(401);
+        if (err) error = err;
         req.user = user;
     });
+
+    if (error) {
+        res.status(401).send(error);
+        return;
+    }
+
     let { email, password } = req.user;
     await getUser(getHash({ email, password }))
         .then((resp) => {
             req.user = resp._id.toString();
         })
         .catch((err) => {
-            throw err;
+            res.status(401).send(err);
         });
     next();
 };
 
 const registerUser = async (credential) => {
+    // TODO: Check user exist with email instead of user hash
     let userHash = getHash(credential);
+    let error = null;
     await getUser(userHash).then((user) => {
-        if (user) throw "Already registered";
+        if (user) error = 409;
         const userDoc = new User({
             hash: userHash,
             type: "user",
         });
         userDoc.save((err) => {
-            if (err) {
-                throw 409;
-            }
+            if (err) error = 409;
         });
     });
-    return generateToken(credential);
+    return error ? { error } : generateToken(credential);
 };
 
 const loginUser = async (credential) => {
+    // TODO: Separate email and password
     let userHash = getHash(credential);
+    let error = null;
     await getUser(userHash).then((user) => {
-        if (!user) throw 401;
+        if (!user) error = 401;
     });
-    return generateToken(credential);
+    return error ? { error } : generateToken(credential);
 };
 
 const getUserById = async (_id) => {
