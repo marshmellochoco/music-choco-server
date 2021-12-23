@@ -72,7 +72,7 @@ const getArtistTracks = async (_id) => {
             completeTracks.push(t);
         })
     );
-    return completeTracks;
+    return { tracks: completeTracks, count: tracks.length };
 };
 //#endregion
 
