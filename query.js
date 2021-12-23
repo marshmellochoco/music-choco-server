@@ -139,6 +139,19 @@ const getPlaylistById = async (_id) => {
 
     let { displayName } = await getUserById(creator);
 
+    return {
+        _id: id,
+        createdAt,
+        creator: displayName,
+        image,
+        name,
+        updatedAt,
+        tracks,
+    };
+};
+
+const getPlaylistTracks = async (_id) => {
+    let { tracks } = await Playlist.findOne({ _id }).sort({ "tracks.0": 1 });
     let completeTracks = [];
     await Promise.all(
         tracks.map(async (track) => {
@@ -149,16 +162,7 @@ const getPlaylistById = async (_id) => {
     completeTracks = completeTracks.sort(
         (a, b) => tracks.indexOf(a._id) - tracks.indexOf(b._id)
     );
-    return {
-        _id: id,
-        createdAt,
-        creator: displayName,
-        image,
-        name,
-        updatedAt,
-        tracks: completeTracks,
-        count: completeTracks.length,
-    };
+    return { tracks: completeTracks, count: tracks.length };
 };
 
 const updatePlaylist = async (_id, body) => {
@@ -179,7 +183,7 @@ const deletePlaylist = async (_id) => {
 //#region User
 const getUserPlaylist = async (creator) => {
     let playlists = await Playlist.find({ creator });
-    return playlists;
+    return { playlists, count: playlists.length };
 };
 
 const getUserFavArtist = async (_id) => {
@@ -190,7 +194,7 @@ const getUserFavArtist = async (_id) => {
             artists.push(await getArtistById(artist));
         })
     );
-    return artists;
+    return { artists, count: user.likedArtist.length };
 };
 
 const getUserFavAlbum = async (_id) => {
@@ -201,21 +205,21 @@ const getUserFavAlbum = async (_id) => {
             albums.push(await getAlbumById(album));
         })
     );
-    return albums;
+    return { albums, count: user.likedAlbum.length };
 };
 
-const addUserFavArtist = async (_id, body) => {
+const setUserFavArtist = async (_id, body) => {
     return await User.findOneAndUpdate(
         { _id },
-        { $push: { likedArtist: body.artist } },
+        { likedArtist: body.artists },
         { new: true }
     );
 };
 
-const addUserFavAlbum = async (_id, body) => {
+const setUserFavAlbum = async (_id, body) => {
     return await User.findOneAndUpdate(
         { _id },
-        { $push: { likedAlbum: body.album } },
+        { likedAlbum: body.albums },
         { new: true }
     );
 };
@@ -313,22 +317,22 @@ const getUserById = async (_id) => {
 module.exports = {
     getArtistById,
     getArtistAlbums,
-    getArtistTracks,
     getAlbumById,
     getAlbumTracks,
-    getTrackById,
     getFeaturedArtists,
     getNewRelease,
-    addPlaylist,
+    getArtistTracks,
     getPlaylistById,
+    getPlaylistTracks,
     updatePlaylist,
     deletePlaylist,
+    addPlaylist,
+    userAuth,
+    loginUser,
+    registerUser,
     getUserPlaylist,
+    setUserFavArtist,
+    setUserFavAlbum,
     getUserFavArtist,
     getUserFavAlbum,
-    addUserFavArtist,
-    addUserFavAlbum,
-    userAuth,
-    registerUser,
-    loginUser,
 };

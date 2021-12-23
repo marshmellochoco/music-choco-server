@@ -8,7 +8,6 @@ const {
     getArtistAlbums,
     getAlbumById,
     getAlbumTracks,
-    getTrackById,
     getFeaturedArtists,
     getNewRelease,
     getArtistTracks,
@@ -20,10 +19,11 @@ const {
     loginUser,
     registerUser,
     getUserPlaylist,
-    addUserFavArtist,
-    addUserFavAlbum,
+    setUserFavArtist,
+    setUserFavAlbum,
     getUserFavArtist,
     getUserFavAlbum,
+    getPlaylistTracks,
 } = require("./query");
 const PORT = 8000;
 const app = express();
@@ -73,7 +73,8 @@ audioConn.once("open", () => {
             res.sendStatus(400);
             return;
         }
-        res.send(await getArtistById(req.params.id));
+        let artist = await getArtistById(req.params.id);
+        res.send(artist);
     });
 
     app.get("/artist/:id/albums", async (req, res) => {
@@ -81,11 +82,17 @@ audioConn.once("open", () => {
             res.sendStatus(400);
             return;
         }
-        res.send(await getArtistAlbums(req.params.id));
+        let albums = await getArtistAlbums(req.params.id);
+        res.send(albums);
     });
 
     app.get("/artist/:id/tracks", async (req, res) => {
-        res.send(await getArtistTracks(req.params.id));
+        if (!mongoose.isValidObjectId(req.params.id)) {
+            res.sendStatus(400);
+            return;
+        }
+        let tracks = await getArtistTracks(req.params.id);
+        res.send(tracks);
     });
     //#endregion
 
@@ -96,11 +103,7 @@ audioConn.once("open", () => {
             return;
         }
         let album = await getAlbumById(req.params.id);
-        let tracks = await getAlbumTracks(req.params.id);
-        res.send({
-            ...album,
-            tracks,
-        });
+        res.send(album);
     });
 
     app.get("/album/:id/tracks", async (req, res) => {
@@ -108,19 +111,12 @@ audioConn.once("open", () => {
             res.sendStatus(400);
             return;
         }
-        res.send(await getAlbumTracks(req.params.id));
+        let tracks = await getAlbumTracks(req.params.id);
+        res.send(tracks);
     });
     //#endregion
 
     //#region Track
-    app.get("/track/:id", async (req, res) => {
-        if (!mongoose.isValidObjectId(req.params.id)) {
-            res.sendStatus(400);
-            return;
-        }
-        res.send(await getTrackById(req.params.id));
-    });
-
     app.get("/track/:id/play", async (req, res) => {
         if (!mongoose.isValidObjectId(req.params.id)) {
             res.sendStatus(400);
@@ -162,11 +158,8 @@ audioConn.once("open", () => {
 
     //#region Playlist
     app.post("/playlist", userAuth, async (req, res) => {
-        try {
-            res.send(await addPlaylist({ ...req.body, creator: req.user }));
-        } catch (err) {
-            res.status(500).send(err);
-        }
+        let playlist = await addPlaylist({ ...req.body, creator: req.user });
+        res.send(playlist);
     });
 
     app.get("/playlist/:id", async (req, res) => {
@@ -174,32 +167,40 @@ audioConn.once("open", () => {
             res.sendStatus(400);
             return;
         }
-        res.send(await getPlaylistById(req.params.id));
+        let playlist = await getPlaylistById(req.params.id);
+        res.send(playlist);
     });
 
-    app.put("/playlist/:id", async (req, res) => {
-        if (!mongoose.isValidObjectId(req.params.id)) {
-            res.sendStatus(400);
-            return;
-        }
-        try {
-            res.send(await updatePlaylist(req.params.id, req.body.playlist));
-        } catch (err) {
-            res.status(500).send(err);
-        }
-    });
-
-    app.delete("/playlist/:id", async (req, res) => {
+    app.get("/playlist/:id/tracks", async (req, res) => {
         if (!mongoose.isValidObjectId(req.params.id)) {
             res.sendStatus(400);
             return;
         }
 
-        try {
-            res.send(await deletePlaylist(req.params.id));
-        } catch (err) {
-            res.status(500).send(err);
+        let tracks = await getPlaylistTracks(req.params.id);
+        res.send(tracks);
+    });
+
+    app.put("/playlist/:id", userAuth, async (req, res) => {
+        // TODO: Auth user before update
+        if (!mongoose.isValidObjectId(req.params.id)) {
+            res.sendStatus(400);
+            return;
         }
+
+        let playlist = await updatePlaylist(req.params.id, req.body.playlist);
+        res.send(playlist);
+    });
+
+    app.delete("/playlist/:id", userAuth, async (req, res) => {
+        // TODO: Auth user before delete
+        if (!mongoose.isValidObjectId(req.params.id)) {
+            res.sendStatus(400);
+            return;
+        }
+
+        let playlist = await deletePlaylist(req.params.id);
+        res.send(playlist);
     });
     //#endregion
 
@@ -217,11 +218,11 @@ audioConn.once("open", () => {
     });
 
     app.put("/library/artist", userAuth, async (req, res) => {
-        res.send(await addUserFavArtist(req.user, req.body));
+        res.send(await setUserFavArtist(req.user, req.body));
     });
 
     app.put("/library/album", userAuth, async (req, res) => {
-        res.send(await addUserFavAlbum(req.user, req.body));
+        res.send(await setUserFavAlbum(req.user, req.body));
     });
     //#endregion
 
