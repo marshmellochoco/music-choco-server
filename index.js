@@ -43,7 +43,47 @@ audioConn.once("open", () => {
     app.listen(PORT, () => {
         console.log("Listening at http://localhost:" + PORT);
     });
-    
+
+    //#region Track
+    app.get("/track/:id/play", async (req, res) => {
+        if (!mongoose.isValidObjectId(req.params.id)) {
+            res.sendStatus(400);
+            return;
+        }
+
+        const db = audioConn.db;
+        db.collection("fs.files").findOne(
+            { filename: req.params.id },
+            (err, audio) => {
+                if (err) {
+                    console.log(err);
+                    return;
+                }
+
+                const contentLength = audio.length;
+                const start = 0;
+                const end = contentLength - 1;
+
+                const headers = {
+                    "Content-Range": `bytes ${start}-${end}/${contentLength}`,
+                    "Accept-Ranges": "bytes",
+                    "Content-Length": contentLength,
+                    "Content-Type": "audio/mp3",
+                };
+
+                res.writeHead(206, headers);
+
+                const bucket = new mongoose.mongo.GridFSBucket(db);
+                const downloadStream = bucket.openDownloadStreamByName(
+                    req.params.id,
+                    { start }
+                );
+                downloadStream.pipe(res);
+            }
+        );
+    });
+    //#endregion
+
     app.use(userAuth);
 
     //#region Upload Track
@@ -61,13 +101,15 @@ audioConn.once("open", () => {
     // });
     //#endregion
 
+    //#region Temp Queries
     app.get("/featured-artists", async (req, res) => {
         res.send(await getFeaturedArtists());
     });
 
-    app.get("/new-release",  async (req, res) => {
+    app.get("/new-release", async (req, res) => {
         res.send(await getNewRelease());
     });
+    //#endregion
 
     //#region Artist
     app.get("/artist/:id", async (req, res) => {
@@ -118,48 +160,8 @@ audioConn.once("open", () => {
     });
     //#endregion
 
-    //#region Track
-    app.get("/track/:id/play", async (req, res) => {
-        if (!mongoose.isValidObjectId(req.params.id)) {
-            res.sendStatus(400);
-            return;
-        }
-
-        const db = audioConn.db;
-        db.collection("fs.files").findOne(
-            { filename: req.params.id },
-            (err, audio) => {
-                if (err) {
-                    console.log(err);
-                    return;
-                }
-
-                const contentLength = audio.length;
-                const start = 0;
-                const end = contentLength - 1;
-
-                const headers = {
-                    "Content-Range": `bytes ${start}-${end}/${contentLength}`,
-                    "Accept-Ranges": "bytes",
-                    "Content-Length": contentLength,
-                    "Content-Type": "audio/mp3",
-                };
-
-                res.writeHead(206, headers);
-
-                const bucket = new mongoose.mongo.GridFSBucket(db);
-                const downloadStream = bucket.openDownloadStreamByName(
-                    req.params.id,
-                    { start }
-                );
-                downloadStream.pipe(res);
-            }
-        );
-    });
-    //#endregion
-
     //#region Playlist
-    app.post("/playlist",  async (req, res) => {
+    app.post("/playlist", async (req, res) => {
         let playlist = await addPlaylist({ ...req.body, creator: req.user });
         res.send(playlist);
     });
@@ -183,7 +185,7 @@ audioConn.once("open", () => {
         res.send(tracks);
     });
 
-    app.put("/playlist/:id",  async (req, res) => {
+    app.put("/playlist/:id", async (req, res) => {
         if (!mongoose.isValidObjectId(req.params.id)) {
             res.sendStatus(400);
             return;
@@ -193,7 +195,7 @@ audioConn.once("open", () => {
         res.send(playlist);
     });
 
-    app.delete("/playlist/:id",  async (req, res) => {
+    app.delete("/playlist/:id", async (req, res) => {
         if (!mongoose.isValidObjectId(req.params.id)) {
             res.sendStatus(400);
             return;
@@ -205,23 +207,23 @@ audioConn.once("open", () => {
     //#endregion
 
     //#region Library
-    app.get("/library/playlist",  async (req, res) => {
+    app.get("/library/playlist", async (req, res) => {
         res.send(await getUserPlaylist(req.user));
     });
 
-    app.get("/library/artist",  async (req, res) => {
+    app.get("/library/artist", async (req, res) => {
         res.send(await getUserFavArtist(req.user));
     });
 
-    app.get("/library/album",  async (req, res) => {
+    app.get("/library/album", async (req, res) => {
         res.send(await getUserFavAlbum(req.user));
     });
 
-    app.put("/library/artist",  async (req, res) => {
+    app.put("/library/artist", async (req, res) => {
         res.send(await setUserFavArtist(req.user, req.body));
     });
 
-    app.put("/library/album",  async (req, res) => {
+    app.put("/library/album", async (req, res) => {
         res.send(await setUserFavAlbum(req.user, req.body));
     });
     //#endregion
