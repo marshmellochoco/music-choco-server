@@ -44,6 +44,20 @@ audioConn.once("open", () => {
         console.log("Listening at http://localhost:" + PORT);
     });
 
+    //#region Authentication
+    app.post("/login", async (req, res) => {
+        let token = await loginUser(req.body.credential);
+        if (!token.error) res.send({ token });
+        else res.sendStatus(token.error);
+    });
+
+    app.post("/register", async (req, res) => {
+        let token = await registerUser(req.body.credential);
+        if (!token.error) res.send({ token });
+        else res.sendStatus(token.error);
+    });
+    //#endregion
+
     //#region Track
     app.get("/track/:id/play", async (req, res) => {
         if (!mongoose.isValidObjectId(req.params.id)) {
@@ -191,7 +205,7 @@ audioConn.once("open", () => {
             return;
         }
 
-        let playlist = await updatePlaylist(req.params.id, req.body.playlist);
+        let playlist = await updatePlaylist(req.params.id, req.body);
         res.send(playlist);
     });
 
@@ -225,20 +239,6 @@ audioConn.once("open", () => {
 
     app.put("/library/album", async (req, res) => {
         res.send(await setUserFavAlbum(req.user, req.body));
-    });
-    //#endregion
-
-    //#region Authentication
-    app.post("/login", async (req, res) => {
-        let token = await loginUser(req.body.credential);
-        if (!token.error) res.send({ token });
-        else res.sendStatus(token.error);
-    });
-
-    app.post("/register", async (req, res) => {
-        let token = await registerUser(req.body.credential);
-        if (!token.error) res.send({ token });
-        else res.sendStatus(token.error);
     });
     //#endregion
 });
