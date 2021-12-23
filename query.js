@@ -228,7 +228,7 @@ const setUserFavAlbum = async (_id, body) => {
 //#region Auth
 function generateToken(credentials) {
     return jwt.sign(credentials, process.env.SECRET_TOKEN, {
-        expiresIn: "1h",
+        expiresIn: "2h",
     });
 }
 

@@ -43,6 +43,8 @@ audioConn.once("open", () => {
     app.listen(PORT, () => {
         console.log("Listening at http://localhost:" + PORT);
     });
+    
+    app.use(userAuth);
 
     //#region Upload Track
     // const fs = require("fs");
@@ -63,7 +65,7 @@ audioConn.once("open", () => {
         res.send(await getFeaturedArtists());
     });
 
-    app.get("/new-release", async (req, res) => {
+    app.get("/new-release",  async (req, res) => {
         res.send(await getNewRelease());
     });
 
@@ -157,7 +159,7 @@ audioConn.once("open", () => {
     //#endregion
 
     //#region Playlist
-    app.post("/playlist", userAuth, async (req, res) => {
+    app.post("/playlist",  async (req, res) => {
         let playlist = await addPlaylist({ ...req.body, creator: req.user });
         res.send(playlist);
     });
@@ -181,8 +183,7 @@ audioConn.once("open", () => {
         res.send(tracks);
     });
 
-    app.put("/playlist/:id", userAuth, async (req, res) => {
-        // TODO: Auth user before update
+    app.put("/playlist/:id",  async (req, res) => {
         if (!mongoose.isValidObjectId(req.params.id)) {
             res.sendStatus(400);
             return;
@@ -192,8 +193,7 @@ audioConn.once("open", () => {
         res.send(playlist);
     });
 
-    app.delete("/playlist/:id", userAuth, async (req, res) => {
-        // TODO: Auth user before delete
+    app.delete("/playlist/:id",  async (req, res) => {
         if (!mongoose.isValidObjectId(req.params.id)) {
             res.sendStatus(400);
             return;
@@ -205,23 +205,23 @@ audioConn.once("open", () => {
     //#endregion
 
     //#region Library
-    app.get("/library/playlist", userAuth, async (req, res) => {
+    app.get("/library/playlist",  async (req, res) => {
         res.send(await getUserPlaylist(req.user));
     });
 
-    app.get("/library/artist", userAuth, async (req, res) => {
+    app.get("/library/artist",  async (req, res) => {
         res.send(await getUserFavArtist(req.user));
     });
 
-    app.get("/library/album", userAuth, async (req, res) => {
+    app.get("/library/album",  async (req, res) => {
         res.send(await getUserFavAlbum(req.user));
     });
 
-    app.put("/library/artist", userAuth, async (req, res) => {
+    app.put("/library/artist",  async (req, res) => {
         res.send(await setUserFavArtist(req.user, req.body));
     });
 
-    app.put("/library/album", userAuth, async (req, res) => {
+    app.put("/library/album",  async (req, res) => {
         res.send(await setUserFavAlbum(req.user, req.body));
     });
     //#endregion
