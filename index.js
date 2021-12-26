@@ -24,6 +24,9 @@ const {
     getUserFavArtist,
     getUserFavAlbum,
     getPlaylistTracks,
+    searchArtist,
+    searchAlbum,
+    searchTrack,
 } = require("./query");
 const PORT = 8000;
 const app = express();
@@ -239,6 +242,15 @@ audioConn.once("open", () => {
 
     app.put("/library/album", async (req, res) => {
         res.send(await setUserFavAlbum(req.user, req.body));
+    });
+    //#endregion
+
+    //#region Search
+    app.get("/search/:query", async (req, res) => {
+        let artists = await searchArtist(req.params.query);
+        let albums = await searchAlbum(req.params.query);
+        let tracks = await searchTrack(req.params.query);
+        res.send({ artists, albums, tracks });
     });
     //#endregion
 });

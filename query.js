@@ -3,6 +3,7 @@ const CryptoJS = require("crypto-js");
 const jwt = require("jsonwebtoken");
 const mongoose = require("mongoose");
 const limit = 20;
+const minLimit = 8;
 const playUrl = (id) => `${process.env.PLAY_URL}track/${id}/play/`;
 
 const getFeaturedArtists = async () => {
@@ -74,6 +75,12 @@ const getArtistTracks = async (_id) => {
     );
     return { tracks: completeTracks, count: tracks.length };
 };
+
+const searchArtist = async (q) => {
+    return await Artist.find({ name: { $regex: q, $options: "i" } }).limit(
+        minLimit
+    );
+};
 //#endregion
 
 //#region Album
@@ -101,6 +108,17 @@ const getAlbumTracks = async (_id) => {
 
     return { tracks: completeTracks, count: completeTracks.length };
 };
+
+const searchAlbum = async (q) => {
+    let albums = await Album.find({ name: { $regex: q, $options: "i" } }).limit(
+        minLimit
+    );
+    let albumList = [];
+    await Promise.all(
+        albums.map(async (a) => albumList.push(await getAlbumById(a)))
+    );
+    return albumList;
+};
 //#endregion
 
 //#region Track
@@ -115,6 +133,17 @@ const getTrackById = async (_id) => {
     );
     artists.sort();
     return { ...track._doc, url: playUrl(_id), album, artists };
+};
+
+const searchTrack = async (q) => {
+    let tracks = await Track.find({
+        title: { $regex: q, $options: "i" },
+    }).limit(limit);
+    let tracksList = [];
+    await Promise.all(
+        tracks.map(async (t) => tracksList.push(await getTrackById(t._id)))
+    );
+    return tracksList;
 };
 //#endregion
 
@@ -339,4 +368,7 @@ module.exports = {
     setUserFavAlbum,
     getUserFavArtist,
     getUserFavAlbum,
+    searchArtist,
+    searchAlbum,
+    searchTrack,
 };
