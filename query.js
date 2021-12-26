@@ -279,22 +279,26 @@ const userAuth = async (req, res, next) => {
         });
 };
 
-const registerUser = async (credential) => {
-    // TODO: Check user exist with email instead of user hash
+const registerUser = async ({ email, password }) => {
     let error = null;
-    await getUser(credential).then((user) => {
-        if (user) error = 409;
-        let { email, password } = credential;
+    let hashPassword = CryptoJS.SHA256(decryptPassword(password)).toString();
+
+    await getUser({ email: email }).then((user) => {
+        if (user) {
+            error = 409;
+            return;
+        }
+
         const userDoc = new User({
             email,
-            password,
+            password: hashPassword,
             type: "user",
         });
         userDoc.save((err) => {
             if (err) error = 409;
         });
     });
-    return error ? { error } : generateToken(credential);
+    return error ? { error } : generateToken({ email, password: hashPassword });
 };
 
 const loginUser = async ({ email, password }) => {
