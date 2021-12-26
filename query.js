@@ -1,5 +1,5 @@
 const { Album, Artist, Track, User, Playlist } = require("./model");
-const crypto = require("crypto");
+const CryptoJS = require("crypto-js");
 const jwt = require("jsonwebtoken");
 const mongoose = require("mongoose");
 const limit = 20;
@@ -232,17 +232,15 @@ function generateToken(credentials) {
     });
 }
 
-function getHash(credentials) {
-    let hash = crypto
-        .createHash("sha256")
-        .update(JSON.stringify(credentials))
-        .digest("hex");
-    return hash;
+function decryptPassword(password) {
+    return CryptoJS.AES.decrypt(password, process.env.PRIVATE_KEY).toString(
+        CryptoJS.enc.Utf8
+    );
 }
 
-async function getUser(hash) {
+async function getUser(credentials) {
     let user;
-    await User.find({ hash })
+    await User.find({ ...credentials })
         .then((res) => {
             if (res.length != 0) user = res[0];
         })
@@ -271,24 +269,25 @@ const userAuth = async (req, res, next) => {
     }
 
     let { email, password } = req.user;
-    await getUser(getHash({ email, password }))
+    await getUser({ email, password })
         .then((resp) => {
             req.user = resp._id.toString();
+            next();
         })
         .catch((err) => {
             res.status(401).send(err);
         });
-    next();
 };
 
 const registerUser = async (credential) => {
     // TODO: Check user exist with email instead of user hash
-    let userHash = getHash(credential);
     let error = null;
-    await getUser(userHash).then((user) => {
+    await getUser(credential).then((user) => {
         if (user) error = 409;
+        let { email, password } = credential;
         const userDoc = new User({
-            hash: userHash,
+            email,
+            password,
             type: "user",
         });
         userDoc.save((err) => {
@@ -298,14 +297,15 @@ const registerUser = async (credential) => {
     return error ? { error } : generateToken(credential);
 };
 
-const loginUser = async (credential) => {
-    // TODO: Separate email and password
-    let userHash = getHash(credential);
+const loginUser = async ({ email, password }) => {
     let error = null;
-    await getUser(userHash).then((user) => {
+    let hashPassword = CryptoJS.SHA256(decryptPassword(password)).toString();
+
+    await getUser({ email, password: hashPassword }).then((user) => {
         if (!user) error = 401;
     });
-    return error ? { error } : generateToken(credential);
+
+    return error ? { error } : generateToken({ email, password: hashPassword });
 };
 
 const getUserById = async (_id) => {

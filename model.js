@@ -65,13 +65,17 @@ const trackSchema = new Schema({
 const Track = mongoose.model("Track", trackSchema);
 
 const userSchema = new Schema({
-    hash: {
+    email: {
+        type: String,
+        required: true,
+    },
+    password: {
         type: String,
         required: true,
     },
     displayName: {
         type: String,
-        default: "User",
+        default: "Anonymous User",
     },
     image: {
         type: String,
