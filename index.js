@@ -18,15 +18,16 @@ const {
     userAuth,
     loginUser,
     registerUser,
-    getUserPlaylist,
-    setUserFavArtist,
-    setUserFavAlbum,
-    getUserFavArtist,
-    getUserFavAlbum,
+    getUserLibraryPlaylist,
+    setUserLibraryArtist,
+    setUserLibraryAlbum,
+    getUserLibraryArtist,
+    getUserLibraryAlbum,
     getPlaylistTracks,
     searchArtist,
     searchAlbum,
     searchTrack,
+    setUserLibraryPlaylist,
 } = require("./query");
 const PORT = 8000;
 const app = express();
@@ -225,23 +226,27 @@ audioConn.once("open", () => {
 
     //#region Library
     app.get("/library/playlist", async (req, res) => {
-        res.send(await getUserPlaylist(req.user));
+        res.send(await getUserLibraryPlaylist(req.user));
     });
 
     app.get("/library/artist", async (req, res) => {
-        res.send(await getUserFavArtist(req.user));
+        res.send(await getUserLibraryArtist(req.user));
     });
 
     app.get("/library/album", async (req, res) => {
-        res.send(await getUserFavAlbum(req.user));
+        res.send(await getUserLibraryAlbum(req.user));
+    });
+
+    app.put("/library/playlist", async (req, res) => {
+        res.send(await setUserLibraryPlaylist(req.user, req.body));
     });
 
     app.put("/library/artist", async (req, res) => {
-        res.send(await setUserFavArtist(req.user, req.body));
+        res.send(await setUserLibraryArtist(req.user, req.body));
     });
 
     app.put("/library/album", async (req, res) => {
-        res.send(await setUserFavAlbum(req.user, req.body));
+        res.send(await setUserLibraryAlbum(req.user, req.body));
     });
     //#endregion
 

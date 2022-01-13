@@ -85,16 +85,6 @@ const userSchema = new Schema({
         type: String,
         required: true,
     },
-    likedArtist: {
-        type: [Schema.Types.ObjectId],
-        ref: Artist,
-        default: [],
-    },
-    likedAlbum: {
-        type: [Schema.Types.ObjectId],
-        ref: Album,
-        default: [],
-    },
 });
 const User = mongoose.model("User", userSchema);
 
@@ -124,4 +114,23 @@ const playlistSchema = new Schema(
 );
 const Playlist = mongoose.model("Playlist", playlistSchema);
 
-module.exports = { Artist, Album, Track, Playlist, User };
+const librarySchema = new Schema({
+    artists: {
+        type: [Schema.Types.ObjectId],
+        ref: Artist,
+        default: [],
+    },
+    albums: {
+        type: [Schema.Types.ObjectId],
+        ref: Album,
+        default: [],
+    },
+    playlists: {
+        type: [Schema.Types.ObjectId],
+        ref: Playlist,
+        default: [],
+    },
+});
+const Library = mongoose.model("Library", librarySchema);
+
+module.exports = { Artist, Album, Track, Playlist, User, Library };

@@ -1,7 +1,7 @@
-const { Album, Artist, Track, User, Playlist } = require("./model");
 const CryptoJS = require("crypto-js");
 const jwt = require("jsonwebtoken");
 const mongoose = require("mongoose");
+const { Artist, Album, Track, Playlist, User } = require("./model");
 const limit = 20;
 const minLimit = 8;
 const playUrl = (id) => `${process.env.PLAY_URL}track/${id}/play/`;
@@ -207,15 +207,54 @@ const deletePlaylist = async (_id) => {
     let dlt = await Playlist.deleteOne({ _id });
     return dlt;
 };
+
+const getUserPlaylist = async (_id) => {
+    const body = {
+        href: "https://api.spotify.com/v1/users/lhxbfiigs9o1shde29qtkum7h/playlists?offset=0&limit=20",
+        items: [
+            {
+                id: "0RxudW9LOmpxGkNodTCzmn",
+                image: {
+                    url: "https://mosaic.scdn.co/300/ab67616d0000b27324f9ba64227d5305b4594101ab67616d0000b27326f91c18f5917a3d84e4ed57ab67616d0000b273756af7c3a9d2a2c2ff37a11eab67616d0000b2739e0863f52c51d1c38a145d5a",
+                    height: 300,
+                    width: 300,
+                },
+                name: "IZ*ONE",
+                owner: {
+                    href: "https://api.spotify.com/v1/users/lhxbfiigs9o1shde29qtkum7h",
+                    id: "lhxbfiigs9o1shde29qtkum7h",
+                    display_name: "Kai3076",
+                    type: "user",
+                },
+                tracks: {
+                    href: "https://api.spotify.com/v1/playlists/0RxudW9LOmpxGkNodTCzmn/tracks",
+                    total: 24,
+                },
+            },
+        ],
+        total: 1,
+    };
+    // TODO: Get user playlist
+};
 //#endregion
 
 //#region User
-const getUserPlaylist = async (creator) => {
-    let playlists = await Playlist.find({ creator });
+const getUserLibraryPlaylist = async (_id) => {
+    let user = await User.findOne({ _id });
+    let pp = [];
+    await Promise.all(
+        user.likedPlaylist.map(async (playlist) => {
+            console.log(playlist);
+            pp.push(await getPlaylistById(playlist));
+        })
+    );
+
+    let playlists = await Playlist.find({ creator: _id });
     return { playlists, count: playlists.length };
+    // TODO: Allow user to save playlist created by other people
 };
 
-const getUserFavArtist = async (_id) => {
+const getUserLibraryArtist = async (_id) => {
     let user = await User.findOne({ _id });
     let artists = [];
     await Promise.all(
@@ -226,7 +265,7 @@ const getUserFavArtist = async (_id) => {
     return { artists, count: user.likedArtist.length };
 };
 
-const getUserFavAlbum = async (_id) => {
+const getUserLibraryAlbum = async (_id) => {
     let user = await User.findOne({ _id });
     let albums = [];
     await Promise.all(
@@ -237,7 +276,15 @@ const getUserFavAlbum = async (_id) => {
     return { albums, count: user.likedAlbum.length };
 };
 
-const setUserFavArtist = async (_id, body) => {
+const setUserLibraryPlaylist = async (_id, body) => {
+    return await User.findOneAndUpdate(
+        { _id },
+        { likedPlaylist: body.playlist },
+        { new: true }
+    );
+};
+
+const setUserLibraryArtist = async (_id, body) => {
     return await User.findOneAndUpdate(
         { _id },
         { likedArtist: body.artists },
@@ -245,7 +292,7 @@ const setUserFavArtist = async (_id, body) => {
     );
 };
 
-const setUserFavAlbum = async (_id, body) => {
+const setUserLibraryAlbum = async (_id, body) => {
     return await User.findOneAndUpdate(
         { _id },
         { likedAlbum: body.albums },
@@ -363,11 +410,12 @@ module.exports = {
     userAuth,
     loginUser,
     registerUser,
-    getUserPlaylist,
-    setUserFavArtist,
-    setUserFavAlbum,
-    getUserFavArtist,
-    getUserFavAlbum,
+    setUserLibraryPlaylist,
+    getUserLibraryPlaylist,
+    setUserLibraryArtist,
+    setUserLibraryAlbum,
+    getUserLibraryArtist,
+    getUserLibraryAlbum,
     searchArtist,
     searchAlbum,
     searchTrack,
