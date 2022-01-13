@@ -19,6 +19,11 @@ const {
     getUserLibraryArtist,
     loginUser,
     registerUser,
+    userAuth,
+    addPlaylist,
+    addTrackToPlaylist,
+    updatePlaylist,
+    deletePlaylist,
 } = require("./queryNew");
 const PORT = 8001;
 const app = express();
@@ -43,6 +48,38 @@ mongoose
 
 app.listen(PORT, () => {
     console.log("Listening at http://localhost:" + PORT);
+});
+
+app.get("/featured-artists", async (req, res) => {
+    let featured = [
+        "61572b92210d387a6980c534",
+        "61582da567d0bc1b70d1adff",
+        "61582dc067d0bc1b70d1ae00",
+    ];
+    let artists = [];
+    await Promise.all(
+        featured.map(async (f) => {
+            artists.push(await getArtistById(f));
+        })
+    );
+    res.send(artists);
+});
+
+app.get("/new-release", async (req, res) => {
+    let newAlbum = [
+        "61572ca0bbd295f47f9e753f",
+        "61576258f2654946c69d9380",
+        "61582dd367d0bc1b70d1ae01",
+        "61582e0467d0bc1b70d1ae03",
+        "61b63b6fe0c844376a66b4be",
+    ];
+    let albums = [];
+    await Promise.all(
+        newAlbum.map(async (f) => {
+            albums.push(await getAlbumById(f));
+        })
+    );
+    res.send(albums);
 });
 
 // #region Track
@@ -92,32 +129,56 @@ app.get("/playlists/:id/tracks", validateId, async (req, res) => {
     let tracks = await getPlaylistTracks(req.params.id);
     res.send(tracks);
 });
+
+app.post("/playlists", userAuth, async (req, res) => {
+    let playlist = await addPlaylist(req.body.name, req.user);
+    res.send(playlist);
+});
+
+app.put("/playlists/:id/track", validateId, userAuth, async (req, res) => {
+    let playlist = await addTrackToPlaylist(
+        req.user,
+        req.params.id,
+        req.body.track
+    );
+    if (!playlist.error) res.send(playlist);
+    else res.status(playlist.error).send("unauthorized");
+});
+
+app.put("/playlists/:id", validateId, userAuth, async (req, res) => {
+    let playlist = await updatePlaylist(req.user, req.params.id, req.body.name);
+    res.send(playlist);
+});
+
+app.delete("/playlists/:id", validateId, userAuth, async (req, res) => {
+    let playlist = await deletePlaylist(req.user, req.params.id);
+    res.send(playlist);
+});
 // #endregion
 
 // #region Current User
-// TODO: Validate the user first
-app.get("/me", async (req, res) => {
-    let user = await getUserById("61c849b40681e39cfc77140f");
+app.get("/me", userAuth, async (req, res) => {
+    let user = await getUserById(req.user);
     res.send(user);
 });
 
-app.get("/me/library", async (req, res) => {
-    let library = await getUserLibrary("61c849b40681e39cfc77140f");
+app.get("/me/library", userAuth, async (req, res) => {
+    let library = await getUserLibrary(req.user);
     res.send(library);
 });
 
-app.get("/me/library/albums", async (req, res) => {
-    let user = await getUserLibraryAlbum("61c849b40681e39cfc77140f");
+app.get("/me/library/albums", userAuth, async (req, res) => {
+    let user = await getUserLibraryAlbum(req.user);
     res.send(user);
 });
 
-app.get("/me/library/artists", async (req, res) => {
-    let user = await getUserLibraryArtist("61c849b40681e39cfc77140f");
+app.get("/me/library/artists", userAuth, async (req, res) => {
+    let user = await getUserLibraryArtist(req.user);
     res.send(user);
 });
 
-app.get("/me/library/playlists", async (req, res) => {
-    let user = await getUserLibraryPlaylist("61c849b40681e39cfc77140f");
+app.get("/me/library/playlists", userAuth, async (req, res) => {
+    let user = await getUserLibraryPlaylist(req.user);
     res.send(user);
 });
 // #endregion
@@ -151,14 +212,14 @@ app.get("/users/:id/library/playlists", validateId, async (req, res) => {
 
 // #region Auth
 app.post("/login", async (req, res) => {
-    let token = await loginUser(req.body.credential);
-    if (!token.error) res.send({ token });
-    else res.sendStatus(token.error);
+    let body = await loginUser(req.body.credential);
+    if (!body.error) res.send(body);
+    else res.sendStatus(body.error);
 });
 
 app.post("/register", async (req, res) => {
-    let token = await registerUser(req.body.credential);
-    if (!token.error) res.send({ token });
-    else res.sendStatus(token.error);
+    let body = await registerUser(req.body.credential);
+    if (!body.error) res.send(body);
+    else res.sendStatus(body.error);
 });
 // #endregion

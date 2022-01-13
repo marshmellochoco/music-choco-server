@@ -1,45 +1,10 @@
 require("dotenv").config();
 const express = require("express");
-const bodyParser = require("body-parser");
 const cors = require("cors");
 const mongoose = require("mongoose");
-const {
-    getArtistById,
-    getArtistAlbums,
-    getAlbumById,
-    getAlbumTracks,
-    getFeaturedArtists,
-    getNewRelease,
-    getArtistTracks,
-    getPlaylistById,
-    updatePlaylist,
-    deletePlaylist,
-    addPlaylist,
-    userAuth,
-    loginUser,
-    registerUser,
-    getUserLibraryPlaylist,
-    setUserLibraryArtist,
-    setUserLibraryAlbum,
-    getUserLibraryArtist,
-    getUserLibraryAlbum,
-    getPlaylistTracks,
-    searchArtist,
-    searchAlbum,
-    searchTrack,
-    setUserLibraryPlaylist,
-} = require("./query");
 const PORT = 8000;
 const app = express();
 app.use(cors());
-app.use(bodyParser.json());
-
-mongoose
-    .connect(process.env.MONGOBD_URI, {
-        useNewUrlParser: true,
-        useUnifiedTopology: true,
-    })
-    .then(() => console.log("Connected to MongoDB Data"));
 
 const audioConn = mongoose.createConnection(process.env.AUDIO_URI);
 audioConn.once("open", () => {
@@ -48,21 +13,6 @@ audioConn.once("open", () => {
         console.log("Listening at http://localhost:" + PORT);
     });
 
-    //#region Authentication
-    app.post("/login", async (req, res) => {
-        let token = await loginUser(req.body.credential);
-        if (!token.error) res.send({ token });
-        else res.sendStatus(token.error);
-    });
-
-    app.post("/register", async (req, res) => {
-        let token = await registerUser(req.body.credential);
-        if (!token.error) res.send({ token });
-        else res.sendStatus(token.error);
-    });
-    //#endregion
-
-    //#region Track
     app.get("/track/:id/play", async (req, res) => {
         if (!mongoose.isValidObjectId(req.params.id)) {
             res.sendStatus(400);
@@ -100,162 +50,162 @@ audioConn.once("open", () => {
             }
         );
     });
-    //#endregion
 
-    app.use(userAuth);
+    // #region temp
+    // app.use(userAuth);
+    // //#region Upload Track
+    // // const fs = require("fs");
+    // // app.get("/init", (req, res) => {
+    // //     const fileName = "61b63c6ae0c844376a66b4c2";
+    // //     const filePath = "./track/ksk.mp3";
+    // //     const db = audioConn.db;
+    // //     const bucket = new mongoose.mongo.GridFSBucket(db);
+    // //     const videoUploadStream = bucket.openUploadStream(fileName);
+    // //     const videoReadStream = fs.createReadStream(filePath);
+    // //     videoReadStream.pipe(videoUploadStream);
+    // //     res.status(200).send("done");
+    // //     console.log("ok");
+    // // });
+    // //#endregion
 
-    //#region Upload Track
-    // const fs = require("fs");
-    // app.get("/init", (req, res) => {
-    //     const fileName = "61b63c6ae0c844376a66b4c2";
-    //     const filePath = "./track/ksk.mp3";
-    //     const db = audioConn.db;
-    //     const bucket = new mongoose.mongo.GridFSBucket(db);
-    //     const videoUploadStream = bucket.openUploadStream(fileName);
-    //     const videoReadStream = fs.createReadStream(filePath);
-    //     videoReadStream.pipe(videoUploadStream);
-    //     res.status(200).send("done");
-    //     console.log("ok");
+    // //#region Temp Queries
+    // app.get("/featured-artists", async (req, res) => {
+    //     res.send(await getFeaturedArtists());
     // });
-    //#endregion
 
-    //#region Temp Queries
-    app.get("/featured-artists", async (req, res) => {
-        res.send(await getFeaturedArtists());
-    });
+    // app.get("/new-release", async (req, res) => {
+    //     res.send(await getNewRelease());
+    // });
+    // //#endregion
 
-    app.get("/new-release", async (req, res) => {
-        res.send(await getNewRelease());
-    });
-    //#endregion
+    // //#region Artist
+    // app.get("/artist/:id", async (req, res) => {
+    //     if (!mongoose.isValidObjectId(req.params.id)) {
+    //         res.sendStatus(400);
+    //         return;
+    //     }
+    //     let artist = await getArtistById(req.params.id);
+    //     res.send(artist);
+    // });
 
-    //#region Artist
-    app.get("/artist/:id", async (req, res) => {
-        if (!mongoose.isValidObjectId(req.params.id)) {
-            res.sendStatus(400);
-            return;
-        }
-        let artist = await getArtistById(req.params.id);
-        res.send(artist);
-    });
+    // app.get("/artist/:id/albums", async (req, res) => {
+    //     if (!mongoose.isValidObjectId(req.params.id)) {
+    //         res.sendStatus(400);
+    //         return;
+    //     }
+    //     let albums = await getArtistAlbums(req.params.id);
+    //     res.send(albums);
+    // });
 
-    app.get("/artist/:id/albums", async (req, res) => {
-        if (!mongoose.isValidObjectId(req.params.id)) {
-            res.sendStatus(400);
-            return;
-        }
-        let albums = await getArtistAlbums(req.params.id);
-        res.send(albums);
-    });
+    // app.get("/artist/:id/tracks", async (req, res) => {
+    //     if (!mongoose.isValidObjectId(req.params.id)) {
+    //         res.sendStatus(400);
+    //         return;
+    //     }
+    //     let tracks = await getArtistTracks(req.params.id);
+    //     res.send(tracks);
+    // });
+    // //#endregion
 
-    app.get("/artist/:id/tracks", async (req, res) => {
-        if (!mongoose.isValidObjectId(req.params.id)) {
-            res.sendStatus(400);
-            return;
-        }
-        let tracks = await getArtistTracks(req.params.id);
-        res.send(tracks);
-    });
-    //#endregion
+    // //#region Album
+    // app.get("/album/:id", async (req, res) => {
+    //     if (!mongoose.isValidObjectId(req.params.id)) {
+    //         res.sendStatus(400);
+    //         return;
+    //     }
+    //     let album = await getAlbumById(req.params.id);
+    //     res.send(album);
+    // });
 
-    //#region Album
-    app.get("/album/:id", async (req, res) => {
-        if (!mongoose.isValidObjectId(req.params.id)) {
-            res.sendStatus(400);
-            return;
-        }
-        let album = await getAlbumById(req.params.id);
-        res.send(album);
-    });
+    // app.get("/album/:id/tracks", async (req, res) => {
+    //     if (!mongoose.isValidObjectId(req.params.id)) {
+    //         res.sendStatus(400);
+    //         return;
+    //     }
+    //     let tracks = await getAlbumTracks(req.params.id);
+    //     res.send(tracks);
+    // });
+    // //#endregion
 
-    app.get("/album/:id/tracks", async (req, res) => {
-        if (!mongoose.isValidObjectId(req.params.id)) {
-            res.sendStatus(400);
-            return;
-        }
-        let tracks = await getAlbumTracks(req.params.id);
-        res.send(tracks);
-    });
-    //#endregion
+    // //#region Playlist
+    // app.post("/playlist", async (req, res) => {
+    //     let playlist = await addPlaylist({ ...req.body, creator: req.user });
+    //     res.send(playlist);
+    // });
 
-    //#region Playlist
-    app.post("/playlist", async (req, res) => {
-        let playlist = await addPlaylist({ ...req.body, creator: req.user });
-        res.send(playlist);
-    });
+    // app.get("/playlist/:id", async (req, res) => {
+    //     if (!mongoose.isValidObjectId(req.params.id)) {
+    //         res.sendStatus(400);
+    //         return;
+    //     }
+    //     let playlist = await getPlaylistById(req.params.id);
+    //     res.send(playlist);
+    // });
 
-    app.get("/playlist/:id", async (req, res) => {
-        if (!mongoose.isValidObjectId(req.params.id)) {
-            res.sendStatus(400);
-            return;
-        }
-        let playlist = await getPlaylistById(req.params.id);
-        res.send(playlist);
-    });
+    // app.get("/playlist/:id/tracks", async (req, res) => {
+    //     if (!mongoose.isValidObjectId(req.params.id)) {
+    //         res.sendStatus(400);
+    //         return;
+    //     }
 
-    app.get("/playlist/:id/tracks", async (req, res) => {
-        if (!mongoose.isValidObjectId(req.params.id)) {
-            res.sendStatus(400);
-            return;
-        }
+    //     let tracks = await getPlaylistTracks(req.params.id);
+    //     res.send(tracks);
+    // });
 
-        let tracks = await getPlaylistTracks(req.params.id);
-        res.send(tracks);
-    });
+    // app.put("/playlist/:id", async (req, res) => {
+    //     if (!mongoose.isValidObjectId(req.params.id)) {
+    //         res.sendStatus(400);
+    //         return;
+    //     }
 
-    app.put("/playlist/:id", async (req, res) => {
-        if (!mongoose.isValidObjectId(req.params.id)) {
-            res.sendStatus(400);
-            return;
-        }
+    //     let playlist = await updatePlaylist(req.params.id, req.body);
+    //     res.send(playlist);
+    // });
 
-        let playlist = await updatePlaylist(req.params.id, req.body);
-        res.send(playlist);
-    });
+    // app.delete("/playlist/:id", async (req, res) => {
+    //     if (!mongoose.isValidObjectId(req.params.id)) {
+    //         res.sendStatus(400);
+    //         return;
+    //     }
 
-    app.delete("/playlist/:id", async (req, res) => {
-        if (!mongoose.isValidObjectId(req.params.id)) {
-            res.sendStatus(400);
-            return;
-        }
+    //     let playlist = await deletePlaylist(req.params.id);
+    //     res.send(playlist);
+    // });
+    // //#endregion
 
-        let playlist = await deletePlaylist(req.params.id);
-        res.send(playlist);
-    });
-    //#endregion
+    // //#region Library
+    // app.get("/library/playlist", async (req, res) => {
+    //     res.send(await getUserLibraryPlaylist(req.user));
+    // });
 
-    //#region Library
-    app.get("/library/playlist", async (req, res) => {
-        res.send(await getUserLibraryPlaylist(req.user));
-    });
+    // app.get("/library/artist", async (req, res) => {
+    //     res.send(await getUserLibraryArtist(req.user));
+    // });
 
-    app.get("/library/artist", async (req, res) => {
-        res.send(await getUserLibraryArtist(req.user));
-    });
+    // app.get("/library/album", async (req, res) => {
+    //     res.send(await getUserLibraryAlbum(req.user));
+    // });
 
-    app.get("/library/album", async (req, res) => {
-        res.send(await getUserLibraryAlbum(req.user));
-    });
+    // app.put("/library/playlist", async (req, res) => {
+    //     res.send(await setUserLibraryPlaylist(req.user, req.body));
+    // });
 
-    app.put("/library/playlist", async (req, res) => {
-        res.send(await setUserLibraryPlaylist(req.user, req.body));
-    });
+    // app.put("/library/artist", async (req, res) => {
+    //     res.send(await setUserLibraryArtist(req.user, req.body));
+    // });
 
-    app.put("/library/artist", async (req, res) => {
-        res.send(await setUserLibraryArtist(req.user, req.body));
-    });
+    // app.put("/library/album", async (req, res) => {
+    //     res.send(await setUserLibraryAlbum(req.user, req.body));
+    // });
+    // //#endregion
 
-    app.put("/library/album", async (req, res) => {
-        res.send(await setUserLibraryAlbum(req.user, req.body));
-    });
-    //#endregion
-
-    //#region Search
-    app.get("/search/:query", async (req, res) => {
-        let artists = await searchArtist(req.params.query);
-        let albums = await searchAlbum(req.params.query);
-        let tracks = await searchTrack(req.params.query);
-        res.send({ artists, albums, tracks });
-    });
-    //#endregion
+    // //#region Search
+    // app.get("/search/:query", async (req, res) => {
+    //     let artists = await searchArtist(req.params.query);
+    //     let albums = await searchAlbum(req.params.query);
+    //     let tracks = await searchTrack(req.params.query);
+    //     res.send({ artists, albums, tracks });
+    // });
+    // //#endregion
+    // #endregion
 });

@@ -1,5 +1,6 @@
 const CryptoJS = require("crypto-js");
 const jwt = require("jsonwebtoken");
+const mongoose = require("mongoose");
 const { Artist, Album, Track, Playlist, User, Library } = require("./model");
 const playUrl = (id) => `${process.env.PLAY_URL}track/${id}/play/`;
 const apiUrl = process.env.API_URL;
@@ -20,10 +21,10 @@ const getTrackById = async (id) => {
     let body = {
         href: `${apiUrl}tracks/${track._id}`,
         id: track._id,
-        name: track.name,
+        name: track.title,
         album,
         artists,
-        duration_ms: 260209,
+        duration: 30,
         play_url: playUrl(track._id),
         track_number: track.number,
     };
@@ -51,6 +52,7 @@ const getArtistAlbums = async (id) => {
             items.push(await getAlbumById(album._id));
         })
     );
+    items.sort();
 
     let body = {
         href: `${apiUrl}artists/${id}/albums`,
@@ -63,13 +65,14 @@ const getArtistAlbums = async (id) => {
 };
 
 const getArtistTracks = async (id) => {
-    let tracks = await Track.find({ artists: _id }).limit(limit);
+    let tracks = await Track.find({ artists: id }).limit(limit);
     let items = [];
     await Promise.all(
         tracks.sort().map(async (track) => {
             items.push(await getTrackById(track._id));
         })
     );
+    items.sort();
 
     let body = {
         items,
@@ -90,6 +93,7 @@ const getAlbumById = async (id) => {
             artists.push(await getArtistById(artist));
         })
     );
+    artists.sort();
 
     return {
         href: `${apiUrl}albums/${album._id}`,
@@ -112,6 +116,7 @@ const getAlbumTracks = async (id) => {
             items.push(await getTrackById(track._id));
         })
     );
+    items.sort();
 
     let body = {
         href: "https://api.spotify.com/v1/albums/16Zkyylp6AkuzZxbCNzHWS/tracks?offset=0&limit=20&market=JP&locale=en-GB,en;q=0.9,en-US;q=0.8,zh-TW;q=0.7,zh;q=0.6,zh-CN;q=0.5,ko;q=0.4,ja;q=0.3",
@@ -141,14 +146,14 @@ const getUserById = async (id) => {
 // #region Playlists
 const getPlaylistById = async (id) => {
     let playlist = await Playlist.findById(id);
-
     let owner = await getUserById(playlist.creator);
 
     let body = {
         href: `${apiUrl}playlists/${playlist._id}`,
         id: playlist._id,
         name: playlist.name,
-        images: playlist.image,
+        image: playlist.image,
+        updatedAt: playlist.updatedAt,
         owner,
         tracks: {
             href: `${apiUrl}playlists/${playlist._id}/tracks`,
@@ -166,6 +171,7 @@ const getPlaylistTracks = async (id) => {
             items.push(await getTrackById(track));
         })
     );
+    items.sort();
 
     let body = {
         href: "https://api.spotify.com/v1/playlists/61yn9KalA3JxHhKRZWT3mW/tracks?offset=0&limit=100&market=JP&locale=en-GB,en;q=0.9,en-US;q=0.8,zh-TW;q=0.7,zh;q=0.6,zh-CN;q=0.5,ko;q=0.4,ja;q=0.3",
@@ -175,6 +181,55 @@ const getPlaylistTracks = async (id) => {
     };
 
     return body;
+};
+
+const addPlaylist = async (name, creator) => {
+    getUserById(creator).then((result) => {
+        if (!result) throw 400;
+    });
+    let playlistDoc = new Playlist({
+        name,
+        creator: new mongoose.Types.ObjectId(creator),
+    });
+    await playlistDoc.save();
+    await Library.findOneAndUpdate(
+        { user: creator },
+        { $push: { playlists: playlistDoc._id } }
+    );
+
+    return await getPlaylistById(playlistDoc._id);
+};
+
+const updatePlaylist = async (user, playlist, name) => {
+    let p = await Playlist.findById(playlist);
+    if (p.creator.toString() !== user) return { error: 401 };
+    await Playlist.findOneAndUpdate({ _id: playlist }, { name });
+    return getPlaylistById(playlist);
+};
+
+const deletePlaylist = async (user, playlist) => {
+    let p = await Playlist.findById(playlist);
+    if (p.creator.toString() !== user) return { error: 401 };
+    let deletedPlaylist = await Playlist.findOneAndDelete({ _id: playlist });
+    await Library.findOneAndUpdate(
+        { user },
+        { $pull: { playlists: playlist } }
+    );
+    return deletedPlaylist._id;
+};
+
+const addTrackToPlaylist = async (user, playlist, track) => {
+    let p = await Playlist.findById(playlist);
+    if (p.creator.toString() !== user) return { error: 401 };
+    await Playlist.findOneAndUpdate(
+        { _id: playlist, tracks: { $ne: track } },
+        { $push: { tracks: track } }
+    );
+    return getPlaylistById(playlist);
+};
+
+const removeTrackFromPlaylist = async () => {
+    // TODO: Implementation
 };
 // #endregion
 
@@ -210,6 +265,7 @@ const getUserLibraryAlbum = async (id) => {
             items.push(await getAlbumById(album))
         )
     );
+    items.sort();
 
     let body = {
         href: `${apiUrl}users/library/albums`,
@@ -227,6 +283,7 @@ const getUserLibraryArtist = async (id) => {
             items.push(await getArtistById(artist))
         )
     );
+    items.sort();
 
     let body = {
         href: `${apiUrl}users/library/artists`,
@@ -244,6 +301,7 @@ const getUserLibraryPlaylist = async (id) => {
             items.push(await getPlaylistById(playlist))
         )
     );
+    items.sort();
 
     let body = {
         href: `${apiUrl}users/library/albums`,
@@ -282,11 +340,19 @@ async function getUser(credentials) {
 const loginUser = async ({ email, password }) => {
     let error = null;
     let hashPassword = CryptoJS.SHA256(decryptPassword(password)).toString();
-    await getUser({ email, password: hashPassword }).then((user) => {
-        if (!user) error = 401;
+    let user = {};
+    await getUser({ email, password: hashPassword }).then((u) => {
+        if (!u) error = 401;
+        user = u;
     });
 
-    return error ? { error } : generateToken({ email, password: hashPassword });
+    return error
+        ? { error }
+        : {
+              token: generateToken({ email, password: hashPassword }),
+              displayName: user.displayName,
+              id: user._id,
+          };
 };
 
 const registerUser = async ({ email, password }) => {
@@ -297,17 +363,54 @@ const registerUser = async ({ email, password }) => {
             error = 409;
             return;
         }
-
-        const userDoc = new User({
-            email,
-            password: hashPassword,
-            type: "user",
-        });
-        userDoc.save((err) => {
-            if (err) error = 409;
-        });
     });
-    return error ? { error } : generateToken({ email, password: hashPassword });
+
+    const userDoc = new User({
+        email,
+        password: hashPassword,
+        type: "user",
+    });
+
+    userDoc.save((err) => {
+        if (err) error = 409;
+    });
+
+    return error
+        ? { error }
+        : {
+              token: generateToken({ email, password: hashPassword }),
+              displayName: userDoc.displayName,
+              id: userDoc.id,
+          };
+};
+
+const userAuth = async (req, res, next) => {
+    const token = req.headers["authorization"];
+    if (token == null) {
+        res.status(401).send("Invalid token");
+        return;
+    }
+
+    let error = null;
+    jwt.verify(token, process.env.SECRET_TOKEN, (err, user) => {
+        if (err) error = err;
+        req.user = user;
+    });
+
+    if (error) {
+        res.status(401).send(error);
+        return;
+    }
+
+    let { email, password } = req.user;
+    await getUser({ email, password })
+        .then((resp) => {
+            req.user = resp._id.toString();
+            next();
+        })
+        .catch((err) => {
+            res.status(401).send(err);
+        });
 };
 // #endregion
 
@@ -320,6 +423,10 @@ module.exports = {
     getArtistTracks,
     getPlaylistById,
     getPlaylistTracks,
+    addPlaylist,
+    updatePlaylist,
+    deletePlaylist,
+    addTrackToPlaylist,
     getUserById,
     getUserLibrary,
     getUserLibraryAlbum,
@@ -327,4 +434,5 @@ module.exports = {
     getUserLibraryPlaylist,
     loginUser,
     registerUser,
+    userAuth,
 };
