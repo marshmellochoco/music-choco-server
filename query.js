@@ -2,7 +2,7 @@ const CryptoJS = require("crypto-js");
 const jwt = require("jsonwebtoken");
 const mongoose = require("mongoose");
 const { Artist, Album, Track, Playlist, User, Library } = require("./model");
-const playUrl = (id) => `${process.env.PLAY_URL}track/${id}/play/`;
+const playUrl = (id) => `${process.env.PLAY_URL}/track/${id}/play/`;
 const apiUrl = process.env.API_URL;
 const limit = 20;
 
@@ -458,32 +458,91 @@ const userAuth = async (req, res, next) => {
 // #endregion
 
 // #region Search
-const searchArtist = async (q) => {
-    return await Artist.find({ name: { $regex: q, $options: "i" } }).limit(
-        minLimit
-    );
-};
+const searchAll = async (q) => {
+    let tracks = await searchTrack(q);
+    let artists = await searchArtist(q);
+    let albums = await searchAlbum(q);
+    let playlists = await searchPlaylist(q);
 
-const searchAlbum = async (q) => {
-    let albums = await Album.find({ name: { $regex: q, $options: "i" } }).limit(
-        minLimit
-    );
-    let albumList = [];
-    await Promise.all(
-        albums.map(async (a) => albumList.push(await getAlbumById(a)))
-    );
-    return albumList;
+    let body = {
+        href: `${apiUrl}/search/${q}`,
+        tracks,
+        artists,
+        albums,
+        playlists,
+    };
 };
 
 const searchTrack = async (q) => {
     let tracks = await Track.find({
         title: { $regex: q, $options: "i" },
     }).limit(limit);
-    let tracksList = [];
+
+    let items = [];
     await Promise.all(
-        tracks.map(async (t) => tracksList.push(await getTrackById(t._id)))
+        tracks.map(async (a) => items.push(await getTrackById(a._id)))
     );
-    return tracksList;
+    let body = {
+        href: `${apiUrl}/search/tracks/${q}`,
+        items,
+        total: items.length,
+        limit,
+    };
+    return body;
+};
+
+const searchArtist = async (q) => {
+    let artists = await Artist.find({
+        name: { $regex: q, $options: "i" },
+    }).limit(limit);
+
+    let items = [];
+    await Promise.all(
+        artists.map(async (a) => items.push(await getArtistById(a._id)))
+    );
+    let body = {
+        href: `${apiUrl}/search/artists/${q}`,
+        items,
+        total: items.length,
+        limit,
+    };
+    return body;
+};
+
+const searchAlbum = async (q) => {
+    let albums = await Album.find({ name: { $regex: q, $options: "i" } }).limit(
+        limit
+    );
+
+    let items = [];
+    await Promise.all(
+        albums.map(async (a) => items.push(await getAlbumById(a._id)))
+    );
+    let body = {
+        href: `${apiUrl}/search/albums/${q}`,
+        items,
+        total: items.length,
+        limit,
+    };
+    return body;
+};
+
+const searchPlaylist = async (q) => {
+    let playlists = await Playlist.find({
+        name: { $regex: q, $options: "i" },
+    }).limit(limit);
+
+    let items = [];
+    await Promise.all(
+        playlists.map(async (a) => items.push(await getPlaylistById(a._id)))
+    );
+    let body = {
+        href: `${apiUrl}/search/playlists/${q}`,
+        items,
+        total: items.length,
+        limit,
+    };
+    return body;
 };
 // #endregion
 
@@ -515,4 +574,9 @@ module.exports = {
     loginUser,
     registerUser,
     userAuth,
+    searchAll,
+    searchTrack,
+    searchArtist,
+    searchAlbum,
+    searchPlaylist,
 };

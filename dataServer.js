@@ -31,8 +31,13 @@ const {
     loginUser,
     registerUser,
     userAuth,
+    searchAll,
+    searchTrack,
+    searchArtist,
+    searchAlbum,
+    searchPlaylist,
 } = require("./query");
-const PORT = 8001;
+const PORT = 8000;
 const app = express();
 
 app.use(cors());
@@ -269,5 +274,32 @@ app.post("/register", async (req, res) => {
     let body = await registerUser(req.body.credential);
     if (!body.error) res.send(body);
     else res.sendStatus(body.error);
+});
+// #endregion
+
+// #region Search
+app.get("/search/:q", async (req, res) => {
+    let body = await searchAll(req.params.q);
+    res.send(body);
+});
+
+app.get("/search/tracks/:q", async (req, res) => {
+    let body = await searchTrack(req.params.q);
+    res.send(body);
+});
+
+app.get("/search/artists/:q", async (req, res) => {
+    let body = await searchArtist(req.params.q);
+    res.send(body);
+});
+
+app.get("/search/albums/:q", async (req, res) => {
+    let body = await searchAlbum(req.params.q);
+    res.send(body);
+});
+
+app.get("/search/playlists/:q", async (req, res) => {
+    let body = await searchPlaylist(req.params.q);
+    res.send(body);
 });
 // #endregion
