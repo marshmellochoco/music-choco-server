@@ -278,28 +278,28 @@ app.post("/register", async (req, res) => {
 // #endregion
 
 // #region Search
-app.get("/search/:q", async (req, res) => {
-    let body = await searchAll(req.params.q);
+app.post("/search", async (req, res) => {
+    let body = await searchAll(req.body.q);
     res.send(body);
 });
 
-app.get("/search/tracks/:q", async (req, res) => {
-    let body = await searchTrack(req.params.q);
+app.post("/search/tracks", async (req, res) => {
+    let body = await searchTrack(req.body.q);
     res.send(body);
 });
 
-app.get("/search/artists/:q", async (req, res) => {
-    let body = await searchArtist(req.params.q);
+app.post("/search/artists", async (req, res) => {
+    let body = await searchArtist(req.body.q);
     res.send(body);
 });
 
-app.get("/search/albums/:q", async (req, res) => {
-    let body = await searchAlbum(req.params.q);
+app.post("/search/albums", async (req, res) => {
+    let body = await searchAlbum(req.body.q);
     res.send(body);
 });
 
-app.get("/search/playlists/:q", async (req, res) => {
-    let body = await searchPlaylist(req.params.q);
+app.post("/search/playlists", async (req, res) => {
+    let body = await searchPlaylist(req.body.q);
     res.send(body);
 });
 // #endregion

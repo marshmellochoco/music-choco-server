@@ -471,6 +471,7 @@ const searchAll = async (q) => {
         albums,
         playlists,
     };
+    return body;
 };
 
 const searchTrack = async (q) => {
