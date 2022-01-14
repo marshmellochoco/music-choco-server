@@ -413,9 +413,14 @@ const registerUser = async ({ email, password }) => {
         password: hashPassword,
         type: "user",
     });
-
     userDoc.save((err) => {
         if (err) error = 409;
+    });
+    const libraryDoc = new Library({
+        user: userDoc._id,
+    });
+    libraryDoc.save((err) => {
+        if (err) error = 500;
     });
 
     return error
