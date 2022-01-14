@@ -115,6 +115,10 @@ const playlistSchema = new Schema(
 const Playlist = mongoose.model("Playlist", playlistSchema);
 
 const librarySchema = new Schema({
+    user: {
+        type: Schema.Types.ObjectId,
+        ref: User,
+    },
     artists: {
         type: [Schema.Types.ObjectId],
         ref: Artist,

@@ -12,19 +12,26 @@ const {
     getArtistTracks,
     getPlaylistById,
     getPlaylistTracks,
+    addPlaylist,
+    updatePlaylist,
+    deletePlaylist,
+    addTrackToPlaylist,
+    removeTrackFromPlaylist,
     getUserById,
     getUserLibrary,
     getUserLibraryAlbum,
-    getUserLibraryPlaylist,
     getUserLibraryArtist,
+    getUserLibraryPlaylist,
+    addLibraryAlbum,
+    addLibraryArtist,
+    addLibraryPlaylist,
+    removeLibraryAlbum,
+    removeLibraryArtist,
+    removeLibraryPlaylist,
     loginUser,
     registerUser,
     userAuth,
-    addPlaylist,
-    addTrackToPlaylist,
-    updatePlaylist,
-    deletePlaylist,
-} = require("./queryNew");
+} = require("./query");
 const PORT = 8001;
 const app = express();
 
@@ -44,11 +51,12 @@ mongoose
         useNewUrlParser: true,
         useUnifiedTopology: true,
     })
-    .then(() => console.log("Connected to MongoDB Data"));
-
-app.listen(PORT, () => {
-    console.log("Listening at http://localhost:" + PORT);
-});
+    .then(() => {
+        console.log("Connected to MongoDB Data");
+        app.listen(PORT, () => {
+            console.log("Listening at http://localhost:" + PORT);
+        });
+    });
 
 app.get("/featured-artists", async (req, res) => {
     let featured = [
@@ -135,8 +143,18 @@ app.post("/playlists", userAuth, async (req, res) => {
     res.send(playlist);
 });
 
-app.put("/playlists/:id/track", validateId, userAuth, async (req, res) => {
+app.put("/playlists/:id/tracks", validateId, userAuth, async (req, res) => {
     let playlist = await addTrackToPlaylist(
+        req.user,
+        req.params.id,
+        req.body.track
+    );
+    if (!playlist.error) res.send(playlist);
+    else res.status(playlist.error).send("unauthorized");
+});
+
+app.delete("/playlists/:id/tracks", validateId, userAuth, async (req, res) => {
+    let playlist = await removeTrackFromPlaylist(
         req.user,
         req.params.id,
         req.body.track
@@ -168,18 +186,48 @@ app.get("/me/library", userAuth, async (req, res) => {
 });
 
 app.get("/me/library/albums", userAuth, async (req, res) => {
-    let user = await getUserLibraryAlbum(req.user);
-    res.send(user);
+    let album = await getUserLibraryAlbum(req.user);
+    res.send(album);
 });
 
 app.get("/me/library/artists", userAuth, async (req, res) => {
-    let user = await getUserLibraryArtist(req.user);
-    res.send(user);
+    let artist = await getUserLibraryArtist(req.user);
+    res.send(artist);
 });
 
 app.get("/me/library/playlists", userAuth, async (req, res) => {
     let user = await getUserLibraryPlaylist(req.user);
     res.send(user);
+});
+
+app.put("/me/library/albums", userAuth, async (req, res) => {
+    let album = await addLibraryAlbum(req.user, req.body.album);
+    res.send(album);
+});
+
+app.put("/me/library/artists", userAuth, async (req, res) => {
+    let artist = await addLibraryArtist(req.user, req.body.artist);
+    res.send(artist);
+});
+
+app.put("/me/library/playlists", userAuth, async (req, res) => {
+    let playlist = await addLibraryPlaylist(req.user, req.body.playlist);
+    res.send(playlist);
+});
+
+app.delete("/me/library/albums", userAuth, async (req, res) => {
+    let album = await removeLibraryAlbum(req.user, req.body.album);
+    res.send(album);
+});
+
+app.delete("/me/library/artists", userAuth, async (req, res) => {
+    let artist = await removeLibraryArtist(req.user, req.body.artist);
+    res.send(artist);
+});
+
+app.delete("/me/library/playlists", userAuth, async (req, res) => {
+    let playlist = await removeLibraryPlaylist(req.user, req.body.playlist);
+    res.send(playlist);
 });
 // #endregion
 
