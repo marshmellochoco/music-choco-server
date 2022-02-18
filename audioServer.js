@@ -10,10 +10,10 @@ const audioConn = mongoose.createConnection(process.env.AUDIO_URI);
 audioConn.once("open", () => {
     console.log("Connected to MongoDB Audio");
     app.listen(PORT, () => {
-        console.log("Listening at http://localhost:" + PORT);
+        console.log("Listening at http://"+ process.env.PLAY_URL +":" + PORT);
     });
 
-    app.get("/track/:id/play", async (req, res) => {
+    app.get("/track/:id/", async (req, res) => {
         if (!mongoose.isValidObjectId(req.params.id)) {
             res.sendStatus(400);
             return;

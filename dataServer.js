@@ -59,7 +59,7 @@ mongoose
     .then(() => {
         console.log("Connected to MongoDB Data");
         app.listen(PORT, () => {
-            console.log("Listening at http://localhost:" + PORT);
+            console.log("Listening at http://"+ process.env.API_URL +":" + PORT);
         });
     });
 

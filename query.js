@@ -2,9 +2,10 @@ const CryptoJS = require("crypto-js");
 const jwt = require("jsonwebtoken");
 const mongoose = require("mongoose");
 const { Artist, Album, Track, Playlist, User, Library } = require("./model");
-const playUrl = (id) => `${process.env.PLAY_URL}/track/${id}/play/`;
-const apiUrl = process.env.API_URL;
 const limit = 20;
+
+const playUrl = (id) => `${process.env.PLAY_URL}/track/${id}/`;
+const apiUrl = process.env.API_URL;
 
 // #region Tracks
 const getTrackById = async (id) => {
