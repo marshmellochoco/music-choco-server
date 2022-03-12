@@ -10,7 +10,7 @@ const audioConn = mongoose.createConnection(process.env.AUDIO_URI);
 audioConn.once("open", () => {
     console.log("Connected to MongoDB Audio");
     app.listen(PORT, () => {
-        console.log("Listening at http://"+ process.env.PLAY_URL +":" + PORT);
+        console.log("Listening at " + process.env.PLAY_URL);
     });
 
     app.get("/track/:id/", async (req, res) => {
