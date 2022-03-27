@@ -1,7 +1,7 @@
-const CryptoJS = require("crypto-js");
-const jwt = require("jsonwebtoken");
-const mongoose = require("mongoose");
-const { Artist, Album, Track, Playlist, User, Library } = require("./model");
+const CryptoJS = require('crypto-js');
+const jwt = require('jsonwebtoken');
+const mongoose = require('mongoose');
+const { Artist, Album, Track, Playlist, User, Library } = require('./model');
 const limit = 20;
 
 const playUrl = (id) => `${process.env.PLAY_URL}/track/${id}/`;
@@ -120,7 +120,7 @@ const getAlbumTracks = async (id) => {
     items.sort((a, b) => a._id > b._id);
 
     let body = {
-        href: "https://api.spotify.com/v1/albums/16Zkyylp6AkuzZxbCNzHWS/tracks?offset=0&limit=20&market=JP&locale=en-GB,en;q=0.9,en-US;q=0.8,zh-TW;q=0.7,zh;q=0.6,zh-CN;q=0.5,ko;q=0.4,ja;q=0.3",
+        href: 'https://api.spotify.com/v1/albums/16Zkyylp6AkuzZxbCNzHWS/tracks?offset=0&limit=20&market=JP&locale=en-GB,en;q=0.9,en-US;q=0.8,zh-TW;q=0.7,zh;q=0.6,zh-CN;q=0.5,ko;q=0.4,ja;q=0.3',
         items,
         total: items.length,
         limit,
@@ -175,7 +175,7 @@ const getPlaylistTracks = async (id) => {
     items.sort((a, b) => a._id > b._id);
 
     let body = {
-        href: "https://api.spotify.com/v1/playlists/61yn9KalA3JxHhKRZWT3mW/tracks?offset=0&limit=100&market=JP&locale=en-GB,en;q=0.9,en-US;q=0.8,zh-TW;q=0.7,zh;q=0.6,zh-CN;q=0.5,ko;q=0.4,ja;q=0.3",
+        href: 'https://api.spotify.com/v1/playlists/61yn9KalA3JxHhKRZWT3mW/tracks?offset=0&limit=100&market=JP&locale=en-GB,en;q=0.9,en-US;q=0.8,zh-TW;q=0.7,zh;q=0.6,zh-CN;q=0.5,ko;q=0.4,ja;q=0.3',
         items,
         total: items.length,
         limit,
@@ -359,7 +359,7 @@ const removeLibraryPlaylist = async (user, playlist) => {
 // #region Auth
 function generateToken(credentials) {
     return jwt.sign(credentials, process.env.SECRET_TOKEN, {
-        expiresIn: "2h",
+        expiresIn: '2h',
     });
 }
 
@@ -399,6 +399,24 @@ const loginUser = async ({ email, password }) => {
           };
 };
 
+const loginUserUnencrypt = async ({ email, password }) => {
+    let error = null;
+    let user = {};
+    let hashPassword = CryptoJS.SHA256(password).toString();
+    await getUser({ email, password: hashPassword }).then((u) => {
+        if (!u) error = 401;
+        user = u;
+    });
+
+    return error
+        ? { error }
+        : {
+              token: generateToken({ email, password: hashPassword }),
+              displayName: user.displayName,
+              id: user._id,
+          };
+};
+
 const registerUser = async ({ email, password }) => {
     let error = null;
     let hashPassword = CryptoJS.SHA256(decryptPassword(password)).toString();
@@ -412,7 +430,7 @@ const registerUser = async ({ email, password }) => {
     const userDoc = new User({
         email,
         password: hashPassword,
-        type: "user",
+        type: 'user',
     });
     userDoc.save((err) => {
         if (err) error = 409;
@@ -434,9 +452,9 @@ const registerUser = async ({ email, password }) => {
 };
 
 const userAuth = async (req, res, next) => {
-    const token = req.headers["authorization"];
+    const token = req.headers['authorization'];
     if (token == null) {
-        res.status(401).send("Invalid token");
+        res.status(401).send('Invalid token');
         return;
     }
 
@@ -482,7 +500,7 @@ const searchAll = async (q) => {
 
 const searchTrack = async (q) => {
     let tracks = await Track.find({
-        title: { $regex: q, $options: "i" },
+        title: { $regex: q, $options: 'i' },
     }).limit(limit);
 
     let items = [];
@@ -500,7 +518,7 @@ const searchTrack = async (q) => {
 
 const searchArtist = async (q) => {
     let artists = await Artist.find({
-        name: { $regex: q, $options: "i" },
+        name: { $regex: q, $options: 'i' },
     }).limit(limit);
 
     let items = [];
@@ -517,7 +535,7 @@ const searchArtist = async (q) => {
 };
 
 const searchAlbum = async (q) => {
-    let albums = await Album.find({ name: { $regex: q, $options: "i" } }).limit(
+    let albums = await Album.find({ name: { $regex: q, $options: 'i' } }).limit(
         limit
     );
 
@@ -536,7 +554,7 @@ const searchAlbum = async (q) => {
 
 const searchPlaylist = async (q) => {
     let playlists = await Playlist.find({
-        name: { $regex: q, $options: "i" },
+        name: { $regex: q, $options: 'i' },
     }).limit(limit);
 
     let items = [];
@@ -579,6 +597,7 @@ module.exports = {
     removeLibraryArtist,
     removeLibraryPlaylist,
     loginUser,
+    loginUserUnencrypt,
     registerUser,
     userAuth,
     searchAll,
