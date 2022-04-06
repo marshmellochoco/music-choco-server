@@ -38,7 +38,7 @@ const {
     searchAlbum,
     searchPlaylist,
 } = require('./query');
-const PORT = 8000;
+const PORT = process.env.PORT || 8000;
 const app = express();
 
 app.use(cors());
@@ -60,9 +60,13 @@ mongoose
     .then(() => {
         console.log('Connected to MongoDB Data');
         app.listen(PORT, () => {
-            console.log('Listening at ' + process.env.API_URL);
+            console.log('Listening at port' + PORT);
         });
     });
+
+app.get('/', (req, res) => {
+    res.send('Welcome to music-choco');
+});
 
 app.use(validateId);
 
